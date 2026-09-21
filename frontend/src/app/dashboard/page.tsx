@@ -27,7 +27,7 @@ const Dashboard = () => {
               A clear picture of your money for {currentMonth}/{currentYear}.
             </p>
           </div>
-          <div className="flex gap-2 sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Month */}
             <Select
               placeholder="Month"

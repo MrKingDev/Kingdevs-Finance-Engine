@@ -49,10 +49,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex min-h-screen">
+          <div className="flex min-h-dvh w-full overflow-hidden">
             <Header />
 
-            <main className="min-w-0 flex-1 p-6">{children}</main>
+            <main className="min-w-0 flex-1 overflow-x-hidden p-6 lg:pl-8">
+              {children}
+            </main>
           </div>
         </ThemeProvider>
       </body>
