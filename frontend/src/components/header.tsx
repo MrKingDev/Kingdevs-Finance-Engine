@@ -62,74 +62,89 @@ const Header = () => {
   return (
     <header
       className={`
-        flex h-screen shrink-0 flex-col
-        overflow-hidden
-        border-r
-        px-2.5 py-3.5
-        bg-sidebar text-sidebar-foreground
-        transition-all duration-300 ease-in-out
-        ${menuOpen ? "w-3xs" : "w-16"}
+      shrink-0
+      transition-[width] duration-300 ease-in-out
+      ${menuOpen ? "w-3xs" : "w-16"}
       `}
     >
-      {/* Nav Logo */}
-      <div className="flex flex-row items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => setMenuOpen((prev) => !prev)}
-          aria-label={menuOpen ? "Close sidebar" : "Open sidebar"}
-        >
-          <Cog className="text-sidebar-foreground size-12 animate-spin transition-colors duration-300 hover:text-sidebar-primary" />
-        </button>
-        <div
-          className={`
+      <div
+        className={`
+          fixed inset-y-0 left-0 z-50
+
+          flex flex-col
+          overflow-hidden
+
+          border-r
+          bg-sidebar
+          text-sidebar-foreground
+
+          px-2.5 py-3.5
+
+          transition-[width] duration-300 ease-in-out
+
+          ${menuOpen ? "w-3xs" : "w-16"}
+        `}
+      >
+        {/* Nav Logo */}
+        <div className="flex flex-row items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label={menuOpen ? "Close sidebar" : "Open sidebar"}
+          >
+            <Cog className="text-sidebar-foreground size-12 animate-spin transition-colors duration-300 hover:text-sidebar-primary" />
+          </button>
+          <div
+            className={`
             flex flex-col
             overflow-hidden whitespace-nowrap
             text-2xl leading-none
             transition-all duration-300
             ${menuOpen ? "w-auto opacity-100" : "w-0 opacity-0"}
           `}
-        >
-          <span className="font-bold">Finance</span> <span>Engine</span>
-        </div>
-      </div>
-      {/* Nav Links */}
-      <nav className="my-4 flex flex-col gap-2 text-lg">
-        {links.map(({ to, label, icon }) => (
-          <Link
-            key={to}
-            href={to}
-            className="flex h-10 items-center gap-2.5 rounded-md px-2 transition-colors duration-300 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
-            <span className="flex shrink-0 items-center justify-center">
-              {icon}
-            </span>
-            <span
-              className={`
+            <span className="font-bold">Finance</span> <span>Engine</span>
+          </div>
+        </div>
+        {/* Nav Links */}
+        <nav className="my-4 flex flex-col gap-2 text-lg">
+          {links.map(({ to, label, icon }) => (
+            <Link
+              key={to}
+              href={to}
+              className="flex h-10 items-center gap-2.5 rounded-md px-2 transition-colors duration-300 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
+              <span className="flex shrink-0 items-center justify-center">
+                {icon}
+              </span>
+              <span
+                className={`
                 overflow-hidden
                 whitespace-nowrap
                 text-lg
                 transition-[max-width,opacity] duration-300 ease-in-out
                 ${menuOpen ? "w-auto opacity-100" : "w-0 opacity-0"}
               `}
-            >
-              {label}
-            </span>
-          </Link>
-        ))}
-      </nav>
-      {/* Theme Toggle */}
-      <div className="flex h-10 items-center gap-2.5 rounded-md px-2">
-        <div className="shrink-0">
-          <ThemeToggle />
-        </div>
+              >
+                {label}
+              </span>
+            </Link>
+          ))}
+        </nav>
+        {/* Theme Toggle */}
+        <div className="flex h-10 items-center gap-2.5 rounded-md px-2">
+          <div className="shrink-0">
+            <ThemeToggle />
+          </div>
 
-        <span
-          className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
-            menuOpen ? "w-auto opacity-100" : "w-0 opacity-0"
-          }`}
-        >
-          Theme
-        </span>
+          <span
+            className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
+              menuOpen ? "w-auto opacity-100" : "w-0 opacity-0"
+            }`}
+          >
+            Theme
+          </span>
+        </div>
       </div>
     </header>
   );

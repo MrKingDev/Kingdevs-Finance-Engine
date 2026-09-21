@@ -46,6 +46,18 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --color-metric-1-bg: var(--metric-1-bg);
+  --color-metric-1-text: var(--metric-1-text);
+
+  --color-metric-2-bg: var(--metric-2-bg);
+  --color-metric-2-text: var(--metric-2-text);
+
+  --color-metric-3-bg: var(--metric-3-bg);
+  --color-metric-3-text: var(--metric-3-text);
+
+  --color-metric-4-bg: var(--metric-4-bg);
+  --color-metric-4-text: var(--metric-4-text);
 }
 
 :root {
@@ -81,6 +93,22 @@
   --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
   --sidebar-border: oklch(0.925 0.005 214.3);
   --sidebar-ring: oklch(0.723 0.014 214.4);
+
+  /* Metric 1 - Green */
+  --metric-1-bg: oklch(0.93 0.05 145);
+  --metric-1-text: oklch(0.42 0.14 145);
+
+  /* Metric 2 - Blue */
+  --metric-2-bg: oklch(0.93 0.05 250);
+  --metric-2-text: oklch(0.45 0.15 250);
+
+  /* Metric 3 - Red */
+  --metric-3-bg: oklch(0.93 0.05 25);
+  --metric-3-text: oklch(0.48 0.18 25);
+
+  /* Metric 4 - Yellow */
+  --metric-4-bg: oklch(0.95 0.07 90);
+  --metric-4-text: oklch(0.5 0.13 80);
 }
 
 .dark {
@@ -115,6 +143,22 @@
   --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.56 0.021 213.5);
+
+  /* Metric 1 - Green */
+  --metric-1-bg: oklch(0.28 0.06 145);
+  --metric-1-text: oklch(0.78 0.14 145);
+
+  /* Metric 2 - Blue */
+  --metric-2-bg: oklch(0.28 0.06 250);
+  --metric-2-text: oklch(0.78 0.14 250);
+
+  /* Metric 3 - Red */
+  --metric-3-bg: oklch(0.28 0.07 25);
+  --metric-3-text: oklch(0.78 0.15 25);
+
+  /* Metric 4 - Yellow */
+  --metric-4-bg: oklch(0.3 0.07 90);
+  --metric-4-text: oklch(0.82 0.14 90);
 }
 
 @layer base {

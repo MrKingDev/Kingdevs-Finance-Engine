@@ -1,6 +1,14 @@
 import PageTransition from "@/components/pageTransitions";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import {
+  Plus,
+  CircleDollarSign,
+  ArrowDownLeft,
+  ArrowUpRight,
+  PiggyBank,
+} from "lucide-react";
+
+import Metric from "@/components/dashboard/metric";
 
 import {
   Select,
@@ -10,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Dashboard = () => {
   const today = new Date();
@@ -88,6 +98,60 @@ const Dashboard = () => {
             </Button>
           </div>
         </header>
+
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Metric
+            label="Balance through month"
+            value="N/A"
+            icon={<CircleDollarSign size={19} />}
+            bg="bg-metric-1-bg"
+            text="text-metric-1-text"
+          />
+
+          <Metric
+            label="Income"
+            value="N/A"
+            icon={<ArrowDownLeft size={19} />}
+            bg="bg-metric-2-bg"
+            text="text-metric-2-text"
+          />
+
+          <Metric
+            label="Expenses"
+            value="N/A"
+            icon={<ArrowUpRight size={19} />}
+            bg="bg-metric-3-bg"
+            text="text-metric-3-text"
+          />
+
+          <Metric
+            label="Savings"
+            value="N/A"
+            icon={<PiggyBank size={19} />}
+            bg="bg-metric-4-bg"
+            text="text-metric-4-text"
+          />
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Spending by Category</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Card Content</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Income vs Expenses</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Card Content</p>
+            </CardContent>
+          </Card>
+        </section>
       </main>
     </PageTransition>
   );
