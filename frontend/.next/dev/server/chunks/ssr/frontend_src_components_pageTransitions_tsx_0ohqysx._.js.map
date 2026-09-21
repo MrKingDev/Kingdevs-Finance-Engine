@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///F:/Projects/Full%20Stack/kingdevs-finance-engine/frontend/src/components/pageTransitions.tsx"],"sourcesContent":["\"use client\";\r\n\r\nimport { motion } from \"motion/react\";\r\n\r\nexport default function Template({ children }: { children: React.ReactNode }) {\r\n  return (\r\n    <motion.div\r\n      initial={{\r\n        opacity: 0,\r\n        filter: \"blur(4px)\",\r\n        y: 6,\r\n      }}\r\n      animate={{\r\n        opacity: 1,\r\n        filter: \"blur(0px)\",\r\n        y: 0,\r\n      }}\r\n      transition={{\r\n        duration: 0.2,\r\n        ease: [0.22, 1, 0.36, 1],\r\n      }}\r\n    >\r\n      {children}\r\n    </motion.div>\r\n  );\r\n}\r\n"],"names":["Template","children","div","initial","opacity","filter","y","animate","transition","duration","ease"],"mappings":";;;;;AAEA;AAFA;;;AAIe,SAASA,SAAS,EAAEC,QAAQ,EAAiC;IAC1E,qBACE,6VAAC,ySAAM,CAACC,GAAG;QACTC,SAAS;YACPC,SAAS;YACTC,QAAQ;YACRC,GAAG;QACL;QACAC,SAAS;YACPH,SAAS;YACTC,QAAQ;YACRC,GAAG;QACL;QACAE,YAAY;YACVC,UAAU;YACVC,MAAM;gBAAC;gBAAM;gBAAG;gBAAM;aAAE;QAC1B;kBAECT;;;;;;AAGP"}}]
-}
