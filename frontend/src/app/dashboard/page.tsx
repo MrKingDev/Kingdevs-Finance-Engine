@@ -1,4 +1,6 @@
 import PageTransition from "@/components/pageTransitions";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 import {
   Select,
@@ -18,56 +20,74 @@ const Dashboard = () => {
   return (
     <PageTransition>
       <main className="flex flex-col gap-4">
-        Dashboard
-        <div className="flex gap-2">
-          {/* Month */}
-          <Select
-            aria-label="Month"
-            placeholder="Month"
-            defaultValue={currentMonth}
-          >
-            <SelectTrigger className="w-45">
-              <SelectValue />
-            </SelectTrigger>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              A clear picture of your money for {currentMonth}/{currentYear}.
+            </p>
+          </div>
+          <div className="flex gap-2 sm:w-auto">
+            {/* Month */}
+            <Select
+              placeholder="Month"
+              aria-label="Month"
+              defaultValue={currentMonth}
+            >
+              <SelectTrigger
+                aria-label="Month"
+                className="w-full min-w-0 sm:w-45"
+              >
+                <SelectValue />
+              </SelectTrigger>
 
-            <SelectContent>
-              <SelectGroup>
-                {Array.from({ length: 12 }, (_, index) => index + 1).map(
-                  (month) => (
-                    <SelectItem key={month} value={month}>
-                      {new Intl.DateTimeFormat("en-US", {
-                        month: "long",
-                      }).format(new Date(2000, month - 1))}
-                    </SelectItem>
-                  ),
-                )}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+              <SelectContent>
+                <SelectGroup>
+                  {Array.from({ length: 12 }, (_, index) => index + 1).map(
+                    (month) => (
+                      <SelectItem key={month} value={month}>
+                        {new Intl.DateTimeFormat("en-US", {
+                          month: "long",
+                        }).format(new Date(2000, month - 1))}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
 
-          {/* Year */}
-          <Select
-            aria-label="Year"
-            placeholder="Year"
-            defaultValue={currentYear}
-          >
-            <SelectTrigger className="w-45">
-              <SelectValue />
-            </SelectTrigger>
+            {/* Year */}
+            <Select
+              placeholder="Year"
+              aria-label="Year"
+              defaultValue={currentYear}
+            >
+              <SelectTrigger
+                aria-label="Year"
+                className="w-full min-w-0 sm:w-45"
+              >
+                <SelectValue />
+              </SelectTrigger>
 
-            <SelectContent>
-              <SelectGroup>
-                {Array.from({ length: 101 }, (_, index) => 2000 + index).map(
-                  (year) => (
-                    <SelectItem key={year} value={year}>
-                      {year}
-                    </SelectItem>
-                  ),
-                )}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
+              <SelectContent>
+                <SelectGroup>
+                  {Array.from({ length: 101 }, (_, index) => 2000 + index).map(
+                    (year) => (
+                      <SelectItem key={year} value={year}>
+                        {year}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+
+            <Button aria-label="Add Transaction">
+              <Plus />
+              Add Transaction
+            </Button>
+          </div>
+        </header>
       </main>
     </PageTransition>
   );
