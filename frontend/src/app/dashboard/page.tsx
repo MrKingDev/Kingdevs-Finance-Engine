@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 
 import PageTransition from "@/components/pageTransitions";
 
@@ -570,6 +571,29 @@ const Dashboard = () => {
                   </BarChart>
                 )}
               </ChartContainer>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Quick Looks */}
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Budget progress</CardTitle>
+              <Link href="/budgets">Manage Budgets</Link>
+            </CardHeader>
+            <CardContent>
+              <p>Card Content</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Recent transactions</CardTitle>
+              <Link href="/transactions">View All</Link>
+            </CardHeader>
+            <CardContent>
+              <p>Card Content</p>
             </CardContent>
           </Card>
         </section>

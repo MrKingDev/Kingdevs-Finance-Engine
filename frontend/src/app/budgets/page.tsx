@@ -2,6 +2,8 @@ import PageTransition from "@/components/pageTransitions";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
+import BudgetCard from "@/components/budgets/budgetCard";
+
 const Budgets = () => {
   return (
     <PageTransition>
@@ -20,6 +22,14 @@ const Budgets = () => {
             </Button>
           </div>
         </header>
+
+        <section className="grid grid-cols-3 gap-4 mt-4">
+          <BudgetCard />
+          <BudgetCard />
+          <BudgetCard />
+          <BudgetCard />
+          <BudgetCard />
+        </section>
       </div>
     </PageTransition>
   );
