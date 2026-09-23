@@ -15,6 +15,8 @@ import {
 
 import { DatePickerInput } from "@/components/ui/date-picker";
 
+import GoalCard from "@/components/goal/goalCard";
+
 const Goals = () => {
   return (
     <PageTransition>
@@ -28,25 +30,28 @@ const Goals = () => {
         </div>
       </header>
 
-      <section>
+      <section className="mt-4">
         <Card>
           <CardHeader>
             <CardTitle>Create a goal</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-4 gap-4">
-              {/* Goal Title */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Goal Name */}
               <Field>
                 <FieldLabel htmlFor="goal-name">Goal Name</FieldLabel>
                 <Input
                   id="goal-name"
                   type="text"
                   placeholder="Emergency Fund"
+                  className="w-full"
                 />
               </Field>
 
+              {/* Goal Type */}
               <Field>
                 <FieldLabel htmlFor="goal-type">Goal Type</FieldLabel>
+
                 <Select
                   placeholder="Pick a Type"
                   id="goal-type"
@@ -55,6 +60,7 @@ const Goals = () => {
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
+
                   <SelectContent>
                     <SelectGroup>
                       <SelectItem>Savings</SelectItem>
@@ -70,7 +76,8 @@ const Goals = () => {
                 <Input
                   id="target-amount"
                   type="number"
-                  placeholder="Emergency Fund"
+                  placeholder="$0.00"
+                  className="w-full"
                 />
               </Field>
 
@@ -79,15 +86,22 @@ const Goals = () => {
                 <FieldLabel htmlFor="target-date">
                   Target Date (optional)
                 </FieldLabel>
-                <DatePickerInput id="target-date" />
+                <DatePickerInput id="target-date" className="w-full" />
               </Field>
             </div>
 
-            <Button className="flex flex-row justify-between items-center">
-              Create Goal
-            </Button>
+            <div className="mt-6 flex justify-end">
+              <Button className="w-full">Create Goal</Button>
+            </div>
           </CardContent>
         </Card>
+      </section>
+
+      <section className="mt-4 grid grid-cols-2 gap-4">
+        <GoalCard />
+        <GoalCard />
+        <GoalCard />
+        <GoalCard />
       </section>
     </PageTransition>
   );

@@ -28,7 +28,11 @@ const BudgetCard = () => {
           </CardTitle>
 
           <CardAction>
-            <Button variant="outline" size="icon" aria-label="Delete budget">
+            <Button
+              variant="destructive"
+              size="icon"
+              aria-label="Delete budget"
+            >
               <Trash className="size-4" />
             </Button>
           </CardAction>

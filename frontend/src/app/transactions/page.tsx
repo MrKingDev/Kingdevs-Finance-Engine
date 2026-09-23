@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 import { DatePickerInput } from "@/components/ui/date-picker";
+import { Separator } from "@/components/ui/separator";
 
 const Transactions = () => {
   return (
@@ -115,6 +116,7 @@ const Transactions = () => {
               />
             </CardHeader>
             <CardContent>
+              <Separator className="mb-4" />
               <p>Card Content</p>
             </CardContent>
           </Card>

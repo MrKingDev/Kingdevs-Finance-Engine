@@ -308,6 +308,8 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.56 0.021 213.5);
+
+  /* Chart */
   --chart-emerald-1: oklch(0.845 0.143 164.978);
   --chart-emerald-2: oklch(0.696 0.17 162.48);
   --chart-emerald-3: oklch(0.596 0.145 163.225);
