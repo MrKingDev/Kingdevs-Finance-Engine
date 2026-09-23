@@ -99,6 +99,21 @@ const Reports = () => {
           </CardContent>
         </Card>
       </section>
+
+      <section className="grid grid-cols-2 gap-4 mt-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly History</CardTitle>
+          </CardHeader>
+          <CardContent>Content</CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Category Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>Content</CardContent>
+        </Card>
+      </section>
     </PageTransition>
   );
 };
