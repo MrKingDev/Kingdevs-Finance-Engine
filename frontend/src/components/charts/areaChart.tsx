@@ -11,21 +11,24 @@ import {
 
 // Chart data & Config
 const incomeExpenseChartData = [
-  { date: "2026-01-01", income: 1000, expenses: 800 },
-  { date: "2026-02-01", income: 2000, expenses: 900 },
-  { date: "2026-03-01", income: 5000, expenses: 1100 },
-  { date: "2026-04-01", income: 1350, expenses: 950 },
-  { date: "2026-05-01", income: 2750, expenses: 1200 },
-  { date: "2026-06-01", income: 1400, expenses: 1050 },
-  { date: "2026-07-01", income: 1900, expenses: 1300 },
-  { date: "2026-08-01", income: 1650, expenses: 1150 },
-  { date: "2026-09-01", income: 2100, expenses: 1450 },
+  { date: "2026-01-01", income: 2350, expenses: 1825 },
+  { date: "2026-02-01", income: 2480, expenses: 1940 },
+  { date: "2026-03-01", income: 2750, expenses: 2105 },
+  { date: "2026-04-01", income: 2600, expenses: 1875 },
+  { date: "2026-05-01", income: 3100, expenses: 2250 },
+  { date: "2026-06-01", income: 2850, expenses: 2325 },
+  { date: "2026-07-01", income: 3400, expenses: 2475 },
+  { date: "2026-08-01", income: 3200, expenses: 2380 },
+  { date: "2026-09-01", income: 3650, expenses: 2590 },
+  { date: "2026-10-01", income: 3450, expenses: 2710 },
+  { date: "2026-11-01", income: 3900, expenses: 2865 },
+  { date: "2026-12-01", income: 4200, expenses: 3150 },
 ];
 
 const incomeExpenseChartConfig = {
   income: {
     label: "Income",
-    color: "var(--chart-green-1)",
+    color: "var(--chart-green-2)",
   },
   expenses: {
     label: "Expenses",

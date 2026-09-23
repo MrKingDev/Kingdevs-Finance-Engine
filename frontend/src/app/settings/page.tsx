@@ -12,6 +12,10 @@ const Settings = () => {
           </p>
         </div>
       </header>
+
+      <section>
+        <div>Nav</div>
+      </section>
     </PageTransition>
   );
 };

@@ -22,13 +22,43 @@ const spendingChartData = [
   },
   {
     category: "shopping",
-    amount: 85.75,
+    amount: 185.75,
     fill: "var(--color-shopping)",
   },
   {
     category: "entertainment",
-    amount: 60,
+    amount: 82.5,
     fill: "var(--color-entertainment)",
+  },
+  {
+    category: "housing",
+    amount: 650,
+    fill: "var(--color-housing)",
+  },
+  {
+    category: "utilities",
+    amount: 145.2,
+    fill: "var(--color-utilities)",
+  },
+  {
+    category: "subscriptions",
+    amount: 54.97,
+    fill: "var(--color-subscriptions)",
+  },
+  {
+    category: "health",
+    amount: 95,
+    fill: "var(--color-health)",
+  },
+  {
+    category: "education",
+    amount: 135.4,
+    fill: "var(--color-education)",
+  },
+  {
+    category: "travel",
+    amount: 210,
+    fill: "var(--color-travel)",
   },
 ];
 
@@ -39,22 +69,52 @@ const spendingChartConfig = {
 
   food: {
     label: "Food",
-    color: "var(--chart-green-1)",
+    color: "var(--chart-orange-2)",
   },
 
   transportation: {
     label: "Transportation",
-    color: "var(--chart-green-2)",
+    color: "var(--chart-blue-2)",
   },
 
   shopping: {
     label: "Shopping",
-    color: "var(--chart-green-3)",
+    color: "var(--chart-pink-2)",
   },
 
   entertainment: {
     label: "Entertainment",
-    color: "var(--chart-green-4)",
+    color: "var(--chart-purple-2)",
+  },
+
+  housing: {
+    label: "Housing",
+    color: "var(--chart-emerald-2)",
+  },
+
+  utilities: {
+    label: "Utilities",
+    color: "var(--chart-yellow-2)",
+  },
+
+  subscriptions: {
+    label: "Subscriptions",
+    color: "var(--chart-violet-2)",
+  },
+
+  health: {
+    label: "Health",
+    color: "var(--chart-red-2)",
+  },
+
+  education: {
+    label: "Education",
+    color: "var(--chart-cyan-2)",
+  },
+
+  travel: {
+    label: "Travel",
+    color: "var(--chart-teal-2)",
   },
 } satisfies ChartConfig;
 
@@ -74,17 +134,28 @@ const PieChartDisplay = () => {
           content={
             <ChartTooltipContent
               hideLabel
-              formatter={(value, name) => (
-                <div className="flex w-full items-center justify-between gap-4">
-                  <span className="capitalize">{name}</span>
+              formatter={(value, name, item) => (
+                <div className="flex w-full items-center gap-2">
+                  {/* Color Indicator */}
+                  <div
+                    className="h-2.5 w-2.5 shrink-0 rounded-xs"
+                    style={{
+                      backgroundColor: item.payload?.fill,
+                    }}
+                  />
 
-                  <span className="font-mono font-medium">
-                    $
-                    {Number(value).toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
+                  {/* Label + Value */}
+                  <div className="flex flex-1 items-center justify-between gap-4">
+                    <span className="capitalize">{name}</span>
+
+                    <span className="font-mono font-medium tabular-nums">
+                      $
+                      {Number(value).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
                 </div>
               )}
             />
