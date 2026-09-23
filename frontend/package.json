@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@internationalized/date": "^3.12.4",
+    "@tanstack/react-table": "^9.2.4",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.3.0",
     "date-fns": "^4.4.0",

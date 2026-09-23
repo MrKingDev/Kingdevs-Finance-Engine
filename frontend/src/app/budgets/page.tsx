@@ -23,7 +23,7 @@ const Budgets = () => {
           </div>
         </header>
 
-        <section className="grid grid-cols-3 gap-4 mt-4">
+        <section className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           <BudgetCard />
           <BudgetCard />
           <BudgetCard />
