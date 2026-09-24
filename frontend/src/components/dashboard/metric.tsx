@@ -34,9 +34,8 @@ export default function Metric({
         >
           {icon}
         </div>
-
-        <CardTitle>{label}</CardTitle>
-        <CardDescription>{value}</CardDescription>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle>{value}</CardTitle>
       </CardHeader>
     </Card>
   );

@@ -44,6 +44,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 // Data
 import RecentTransactions from "@/components/dashboard/recentTransactions";
 
+const valueData = {
+  balance: "$150.00",
+  income: "$100.00",
+  expenses: "$50.00",
+  savings: "$1000.00",
+};
+
 const Dashboard = () => {
   const today = new Date();
 
@@ -131,7 +138,7 @@ const Dashboard = () => {
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Metric
             label="Balance through month"
-            value="N/A"
+            value={valueData.balance}
             icon={<CircleDollarSign size={19} />}
             bg="bg-metric-1-bg"
             text="text-metric-1-text"
@@ -139,7 +146,7 @@ const Dashboard = () => {
 
           <Metric
             label="Income"
-            value="N/A"
+            value={valueData.income}
             icon={<ArrowDownLeft size={19} />}
             bg="bg-metric-2-bg"
             text="text-metric-2-text"
@@ -147,7 +154,7 @@ const Dashboard = () => {
 
           <Metric
             label="Expenses"
-            value="N/A"
+            value={valueData.expenses}
             icon={<ArrowUpRight size={19} />}
             bg="bg-metric-3-bg"
             text="text-metric-3-text"
@@ -155,7 +162,7 @@ const Dashboard = () => {
 
           <Metric
             label="Savings"
-            value="N/A"
+            value={valueData.savings}
             icon={<PiggyBank size={19} />}
             bg="bg-metric-4-bg"
             text="text-metric-4-text"

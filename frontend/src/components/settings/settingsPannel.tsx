@@ -27,8 +27,7 @@ const tabTriggerStyles = `
   duration-200
 
   hover:text-foreground
-
-  data-[selected]:border-primary
+  
   data-[selected]:text-foreground
   data-[selected]:bg-transparent
 `;
