@@ -12,72 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 
-// Transaction Data
-const transactions = [
-  {
-    id: 1,
-    date: "09/23/2026",
-    merchant: "Chipotle",
-    category: "Food",
-    bank: "Chase",
-    type: "Expense",
-    amount: 18.45,
-  },
-  {
-    id: 2,
-    date: "09/22/2026",
-    merchant: "Primark",
-    category: "Shopping",
-    bank: "Capital One",
-    type: "Expense",
-    amount: 64.99,
-  },
-  {
-    id: 3,
-    date: "09/21/2026",
-    merchant: "Primark Payroll",
-    category: "Income",
-    bank: "Chase",
-    type: "Income",
-    amount: 235.62,
-  },
-  {
-    id: 4,
-    date: "09/20/2026",
-    merchant: "Spotify",
-    category: "Entertainment",
-    bank: "Chase",
-    type: "Expense",
-    amount: 11.99,
-  },
-  {
-    id: 5,
-    date: "09/20/2026",
-    merchant: "Spotify",
-    category: "Entertainment",
-    bank: "Chase",
-    type: "Expense",
-    amount: 11.99,
-  },
-  {
-    id: 6,
-    date: "09/20/2026",
-    merchant: "Spotify",
-    category: "Entertainment",
-    bank: "Chase",
-    type: "Expense",
-    amount: 11.99,
-  },
-  {
-    id: 7,
-    date: "09/20/2026",
-    merchant: "Spotify",
-    category: "Entertainment",
-    bank: "Chase",
-    type: "Income",
-    amount: 11.99,
-  },
-];
+import transactionData from "@/data/transactionData.json";
 
 const TransactionsTable = () => {
   const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -91,11 +26,11 @@ const TransactionsTable = () => {
       <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           <span className="font-medium text-foreground">
-            {transactions.length}
+            {transactionData.length}
           </span>{" "}
           of{" "}
           <span className="font-medium text-foreground">
-            {transactions.length}
+            {transactionData.length}
           </span>{" "}
           transactions
         </p>
@@ -139,7 +74,7 @@ const TransactionsTable = () => {
           </TableHeader>
 
           <TableBody renderEmptyState={() => "No transactions found."}>
-            {transactions.map((transaction) => (
+            {transactionData.map((transaction) => (
               <TableRow key={transaction.id} id={transaction.id}>
                 {/* Date */}
                 <TableCell className="whitespace-nowrap">

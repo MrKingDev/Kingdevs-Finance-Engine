@@ -1,0 +1,52 @@
+[
+  {
+    "category": "food",
+    "amount": 245.5,
+    "fill": "var(--color-food)"
+  },
+  {
+    "category": "transportation",
+    "amount": 120,
+    "fill": "var(--color-transportation)"
+  },
+  {
+    "category": "shopping",
+    "amount": 185.75,
+    "fill": "var(--color-shopping)"
+  },
+  {
+    "category": "entertainment",
+    "amount": 82.5,
+    "fill": "var(--color-entertainment)"
+  },
+  {
+    "category": "housing",
+    "amount": 650,
+    "fill": "var(--color-housing)"
+  },
+  {
+    "category": "utilities",
+    "amount": 145.2,
+    "fill": "var(--color-utilities)"
+  },
+  {
+    "category": "subscriptions",
+    "amount": 54.97,
+    "fill": "var(--color-subscriptions)"
+  },
+  {
+    "category": "health",
+    "amount": 95,
+    "fill": "var(--color-health)"
+  },
+  {
+    "category": "education",
+    "amount": 135.4,
+    "fill": "var(--color-education)"
+  },
+  {
+    "category": "travel",
+    "amount": 210,
+    "fill": "var(--color-travel)"
+  }
+]

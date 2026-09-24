@@ -41,6 +41,9 @@ import BarChartDisplay from "@/components/charts/barChart";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
+// Data
+import RecentTransactions from "@/components/dashboard/recentTransactions";
+
 const Dashboard = () => {
   const today = new Date();
 
@@ -222,7 +225,9 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Budget progress</CardTitle>
-              <Link href="/budgets">Manage Budgets</Link>
+              <Link href="/budgets">
+                <Button variant="link">Manage Budgets</Button>
+              </Link>
             </CardHeader>
             <CardContent>
               <p>Card Content</p>
@@ -232,10 +237,12 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Recent transactions</CardTitle>
-              <Link href="/transactions">View All</Link>
+              <Link href="/transactions">
+                <Button variant="link">View All</Button>
+              </Link>
             </CardHeader>
             <CardContent>
-              <p>Card Content</p>
+              <RecentTransactions />
             </CardContent>
           </Card>
         </section>

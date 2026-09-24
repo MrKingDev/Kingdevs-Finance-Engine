@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/card";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { map } from "motion/react-client";
 
 // Styling
 const tabTriggerStyles = `
@@ -49,12 +48,12 @@ const tabOptions = [
     content: (
       <Card>
         <CardHeader>
-          <CardTitle>Option 2</CardTitle>
-          <CardDescription>Settings for option 2.</CardDescription>
+          <CardTitle>Option 1</CardTitle>
+          <CardDescription>Settings for option 1</CardDescription>
         </CardHeader>
 
         <CardContent>
-          <p>Option 2 content</p>
+          <p>Option 1 content</p>
         </CardContent>
       </Card>
     ),
@@ -81,12 +80,12 @@ const tabOptions = [
     content: (
       <Card>
         <CardHeader>
-          <CardTitle>Option 2</CardTitle>
-          <CardDescription>Settings for option 2.</CardDescription>
+          <CardTitle>Option 3</CardTitle>
+          <CardDescription>Settings for option 3.</CardDescription>
         </CardHeader>
 
         <CardContent>
-          <p>Option 2 content</p>
+          <p>Option 3 content</p>
         </CardContent>
       </Card>
     ),

@@ -1,0 +1,14 @@
+[
+  { "date": "2026-01-01", "income": 2350, "expenses": 1825 },
+  { "date": "2026-02-01", "income": 2480, "expenses": 1940 },
+  { "date": "2026-03-01", "income": 2750, "expenses": 2105 },
+  { "date": "2026-04-01", "income": 2600, "expenses": 1875 },
+  { "date": "2026-05-01", "income": 3100, "expenses": 2250 },
+  { "date": "2026-06-01", "income": 2850, "expenses": 2325 },
+  { "date": "2026-07-01", "income": 3400, "expenses": 2475 },
+  { "date": "2026-08-01", "income": 3200, "expenses": 2380 },
+  { "date": "2026-09-01", "income": 3650, "expenses": 2590 },
+  { "date": "2026-10-01", "income": 3450, "expenses": 2710 },
+  { "date": "2026-11-01", "income": 3900, "expenses": 2865 },
+  { "date": "2026-12-01", "income": 4200, "expenses": 3150 }
+]

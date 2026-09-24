@@ -1,0 +1,65 @@
+[
+  {
+    "id": 1,
+    "date": "09/23/2026",
+    "merchant": "Chipotle",
+    "category": "Food",
+    "bank": "Chase",
+    "type": "Expense",
+    "amount": 18.45
+  },
+  {
+    "id": 2,
+    "date": "09/22/2026",
+    "merchant": "Primark",
+    "category": "Shopping",
+    "bank": "Capital One",
+    "type": "Expense",
+    "amount": 64.99
+  },
+  {
+    "id": 3,
+    "date": "09/21/2026",
+    "merchant": "Primark Payroll",
+    "category": "Income",
+    "bank": "Chase",
+    "type": "Income",
+    "amount": 235.62
+  },
+  {
+    "id": 4,
+    "date": "09/20/2026",
+    "merchant": "Spotify",
+    "category": "Entertainment",
+    "bank": "Chase",
+    "type": "Expense",
+    "amount": 11.99
+  },
+  {
+    "id": 5,
+    "date": "09/20/2026",
+    "merchant": "Spotify",
+    "category": "Entertainment",
+    "bank": "Chase",
+    "type": "Expense",
+    "amount": 11.99
+  },
+  {
+    "id": 6,
+    "date": "09/20/2026",
+    "merchant": "Spotify",
+    "category": "Entertainment",
+    "bank": "Chase",
+    "type": "Expense",
+    "amount": 11.99
+  },
+  {
+    "id": 7,
+    "date": "09/20/2026",
+    "merchant": "SoundCloud",
+    "category": "Entertainment",
+    "bank": "Chase",
+    "type": "Income",
+    "amount": 11.99
+  }
+]
