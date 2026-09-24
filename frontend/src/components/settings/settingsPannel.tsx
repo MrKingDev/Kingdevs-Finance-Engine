@@ -43,13 +43,15 @@ const tabContentStyles = `
 
 const tabOptions = [
   {
-    lable: "Option 1",
-    optionId: "option-1",
+    lable: "Import CSV",
+    optionId: "csv",
     content: (
       <Card>
         <CardHeader>
-          <CardTitle>Option 1</CardTitle>
-          <CardDescription>Settings for option 1</CardDescription>
+          <CardTitle>Import Transactions</CardTitle>
+          <CardDescription>
+            Validate every row before anything reaches your ledger.
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -59,13 +61,16 @@ const tabOptions = [
     ),
   },
   {
-    lable: "Option 2",
-    optionId: "option-2",
+    lable: "Preferences",
+    optionId: "pref",
     content: (
       <Card>
         <CardHeader>
-          <CardTitle>Option 2</CardTitle>
-          <CardDescription>Settings for option 2.</CardDescription>
+          <CardTitle>Preferences</CardTitle>
+          <CardDescription>
+            Control presentation, rule behavior, and deterministic alert
+            thresholds
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -75,13 +80,52 @@ const tabOptions = [
     ),
   },
   {
-    lable: "Option 3",
-    optionId: "option-3",
+    lable: "Downloadables",
+    optionId: "download",
     content: (
       <Card>
         <CardHeader>
-          <CardTitle>Option 3</CardTitle>
-          <CardDescription>Settings for option 3.</CardDescription>
+          <CardTitle>Downloadables</CardTitle>
+          <CardDescription>
+            Export a professional PDF summary or safe transaction CSV
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <p>Option 3 content</p>
+        </CardContent>
+      </Card>
+    ),
+  },
+  {
+    lable: "Rules",
+    optionId: "rules",
+    content: (
+      <Card>
+        <CardHeader>
+          <CardTitle>Rule Settings</CardTitle>
+          <CardDescription>
+            Higher numbers run first. Equal priorities use the older rule ID
+            first
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <p>Option 3 content</p>
+        </CardContent>
+      </Card>
+    ),
+  },
+  {
+    lable: "Categories",
+    optionId: "catgeories",
+    content: (
+      <Card>
+        <CardHeader>
+          <CardTitle>Categories Settings</CardTitle>
+          <CardDescription>
+            Organize spending with accessible colors and icons.
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
