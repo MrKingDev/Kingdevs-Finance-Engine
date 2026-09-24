@@ -1,4 +1,5 @@
 import PageTransition from "@/components/pageTransitions";
+import SettingsPanel from "@/components/settings/settingsPannel";
 
 const Settings = () => {
   return (
@@ -13,8 +14,8 @@ const Settings = () => {
         </div>
       </header>
 
-      <section>
-        <div>Nav</div>
+      <section className="mt-4">
+        <SettingsPanel />
       </section>
     </PageTransition>
   );
