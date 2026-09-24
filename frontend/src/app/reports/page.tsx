@@ -13,6 +13,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import { Label } from "@/components/ui/label";
@@ -21,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import PieChartDisplay from "@/components/charts/pieChart";
 import AreaChartDisplay from "@/components/charts/areaChart";
 import BarChartDisplay from "@/components/charts/barChart";
+import BarChart2 from "@/components/charts/barChart2";
 
 const Reports = () => {
   const [chartType, setChartType] = React.useState<"area" | "bar">("area");
@@ -126,7 +136,31 @@ const Reports = () => {
         </section>
 
         {/* Detailed Reports */}
-        <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Weekly Spending</CardTitle>
+              <CardDescription>January - June 2024</CardDescription>
+              <CardAction>
+                <Select placeholder="Select Category">
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem>Item 1</SelectItem>
+                      <SelectItem>Item 1</SelectItem>
+                      <SelectItem>Item 1</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              <BarChart2 />
+            </CardContent>
+          </Card>
+
           <Card className="min-w-0">
             <CardHeader>
               <CardTitle>Monthly History</CardTitle>
