@@ -32,6 +32,8 @@ import AreaChartDisplay from "@/components/charts/areaChart";
 import BarChartDisplay from "@/components/charts/barChart";
 import BarChart2 from "@/components/charts/barChart2";
 import BudgetCategoryChart from "@/components/charts/budgetCategoryChart";
+import MonthlyHistory from "@/components/reports/monthlyHistory";
+import CategoryBreakdown from "@/components/reports/categoryBreakdown";
 
 const Reports = () => {
   const [chartType, setChartType] = React.useState<"area" | "bar">("area");
@@ -178,7 +180,9 @@ const Reports = () => {
               <CardTitle>Monthly History</CardTitle>
             </CardHeader>
 
-            <CardContent>Content</CardContent>
+            <CardContent>
+              <MonthlyHistory />
+            </CardContent>
           </Card>
 
           <Card className="min-w-0">
@@ -186,7 +190,9 @@ const Reports = () => {
               <CardTitle>Category Breakdown</CardTitle>
             </CardHeader>
 
-            <CardContent>Content</CardContent>
+            <CardContent>
+              <CategoryBreakdown />
+            </CardContent>
           </Card>
         </section>
       </div>

@@ -43,6 +43,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Data
 import RecentTransactions from "@/components/dashboard/recentTransactions";
+import BudgetCategoryChart from "@/components/charts/budgetCategoryChart";
 
 const valueData = {
   balance: "$150.00",
@@ -231,19 +232,19 @@ const Dashboard = () => {
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Budget progress</CardTitle>
+              <CardTitle>Budget Progress</CardTitle>
               <Link href="/budgets">
                 <Button variant="link">Manage Budgets</Button>
               </Link>
             </CardHeader>
             <CardContent>
-              <p>Card Content</p>
+              <BudgetCategoryChart />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent transactions</CardTitle>
+              <CardTitle>Recent Transactions</CardTitle>
               <Link href="/transactions">
                 <Button variant="link">View All</Button>
               </Link>
