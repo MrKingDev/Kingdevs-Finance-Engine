@@ -16,7 +16,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
         y: 0,
       }}
       transition={{
-        duration: 0.2,
+        duration: 0.3,
         ease: [0.22, 1, 0.36, 1],
       }}
     >

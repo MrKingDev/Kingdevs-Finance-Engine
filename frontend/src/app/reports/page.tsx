@@ -31,6 +31,7 @@ import PieChartDisplay from "@/components/charts/pieChart";
 import AreaChartDisplay from "@/components/charts/areaChart";
 import BarChartDisplay from "@/components/charts/barChart";
 import BarChart2 from "@/components/charts/barChart2";
+import BudgetCategoryChart from "@/components/charts/budgetCategoryChart";
 
 const Reports = () => {
   const [chartType, setChartType] = React.useState<"area" | "bar">("area");
@@ -136,7 +137,7 @@ const Reports = () => {
         </section>
 
         {/* Detailed Reports */}
-        <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>Weekly Spending</CardTitle>
@@ -158,6 +159,17 @@ const Reports = () => {
             </CardHeader>
             <CardContent>
               <BarChart2 />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Budget vs Actual</CardTitle>
+              <CardDescription>Budgets vs Acutal spending</CardDescription>
+              <CardAction></CardAction>
+            </CardHeader>
+            <CardContent>
+              <BudgetCategoryChart />
             </CardContent>
           </Card>
 

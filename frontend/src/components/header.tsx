@@ -12,6 +12,7 @@ import {
   ChartLine,
   Crown,
   Settings,
+  PencilRuler,
 } from "lucide-react";
 
 const Header = () => {
@@ -27,6 +28,7 @@ const Header = () => {
       icon: <CreditCardReader className="size-7" />,
     },
     { to: "/budgets", label: "Budgets", icon: <ChartPie className="size-7" /> },
+    { to: "/tools", label: "Tools", icon: <PencilRuler className="size-7" /> },
     { to: "/goals", label: "Goals", icon: <Target className="size-7" /> },
     {
       to: "/reports",

@@ -13,6 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // Styling
 const tabTriggerStyles = `
   relative
+  shrink-0
+  whitespace-nowrap
   rounded-none
   border-b-2
   border-transparent
@@ -27,7 +29,8 @@ const tabTriggerStyles = `
   duration-200
 
   hover:text-foreground
-  
+
+  data-[selected]:border-primary
   data-[selected]:text-foreground
   data-[selected]:bg-transparent
 `;
@@ -42,7 +45,7 @@ const tabContentStyles = `
 
 const tabOptions = [
   {
-    lable: "Import CSV",
+    label: "Import CSV",
     optionId: "csv",
     content: (
       <Card>
@@ -60,7 +63,7 @@ const tabOptions = [
     ),
   },
   {
-    lable: "Preferences",
+    label: "Preferences",
     optionId: "pref",
     content: (
       <Card>
@@ -68,7 +71,7 @@ const tabOptions = [
           <CardTitle>Preferences</CardTitle>
           <CardDescription>
             Control presentation, rule behavior, and deterministic alert
-            thresholds
+            thresholds.
           </CardDescription>
         </CardHeader>
 
@@ -79,14 +82,14 @@ const tabOptions = [
     ),
   },
   {
-    lable: "Downloadables",
+    label: "Downloadables",
     optionId: "download",
     content: (
       <Card>
         <CardHeader>
           <CardTitle>Downloadables</CardTitle>
           <CardDescription>
-            Export a professional PDF summary or safe transaction CSV
+            Export a professional PDF summary or safe transaction CSV.
           </CardDescription>
         </CardHeader>
 
@@ -97,7 +100,7 @@ const tabOptions = [
     ),
   },
   {
-    lable: "Rules",
+    label: "Rules",
     optionId: "rules",
     content: (
       <Card>
@@ -105,19 +108,19 @@ const tabOptions = [
           <CardTitle>Rule Settings</CardTitle>
           <CardDescription>
             Higher numbers run first. Equal priorities use the older rule ID
-            first
+            first.
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          <p>Option 3 content</p>
+          <p>Option 4 content</p>
         </CardContent>
       </Card>
     ),
   },
   {
-    lable: "Categories",
-    optionId: "catgeories",
+    label: "Categories",
+    optionId: "categories",
     content: (
       <Card>
         <CardHeader>
@@ -128,7 +131,7 @@ const tabOptions = [
         </CardHeader>
 
         <CardContent>
-          <p>Option 3 content</p>
+          <p>Option 5 content</p>
         </CardContent>
       </Card>
     ),
@@ -137,35 +140,70 @@ const tabOptions = [
 
 export default function SettingsPanel() {
   return (
-    <Tabs defaultSelectedKey="option-1" className="w-full">
-      <TabsList
-        variant="line"
+    <Tabs defaultSelectedKey="csv" className="w-full">
+      <div
         className="
-          w-full
-          justify-start
-          gap-1
-          rounded-none
-          border-b
-          bg-transparent
-          p-0
-        "
+      w-full
+      overflow-x-auto
+      overflow-y-hidden
+      [scrollbar-width:none]
+      [&::-webkit-scrollbar]:hidden
+    "
       >
-        {tabOptions.map((tabOption) => (
-          <TabsTrigger
-            key={tabOption.optionId}
-            id={tabOption.optionId}
-            className={tabTriggerStyles}
-          >
-            {tabOption.lable}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+        <TabsList
+          variant="line"
+          className="
+        h-11
+        w-max
+        min-w-full
+        justify-start
+        gap-1
+        rounded-none
+        border-b
+        bg-transparent
+        p-0
+      "
+        >
+          {tabOptions.map((tabOption) => (
+            <TabsTrigger
+              key={tabOption.optionId}
+              id={tabOption.optionId}
+              className={`
+            relative
+            h-11
+            shrink-0
+            whitespace-nowrap
+            rounded-none
+            border-b-2
+            border-transparent
+            bg-transparent
+            px-4
+            py-0
+            text-sm
+            font-medium
+            text-muted-foreground
+            shadow-none
+            transition-all
+            duration-200
+
+            hover:text-foreground
+
+            data-[selected]:border-primary
+            data-[selected]:bg-transparent
+            data-[selected]:text-foreground
+          `}
+            >
+              {tabOption.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
 
       {tabOptions.map((tabOption) => (
         <TabsContent
           key={tabOption.optionId}
           id={tabOption.optionId}
-          className={tabContentStyles}
+          className="mt-6 animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
         >
           {tabOption.content}
         </TabsContent>
