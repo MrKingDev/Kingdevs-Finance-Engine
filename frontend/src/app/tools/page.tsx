@@ -1,4 +1,44 @@
 import PageTransition from "@/components/pageTransitions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PaycheckSplitter from "@/components/tools/paycheck-splitter";
+import SalaryConverter from "@/components/tools/salary-converter";
+import BillSplitter from "@/components/tools/tip-calculator";
+import CompoundInsert from "@/components/tools/compound-interest";
+import TripBudget from "@/components/tools/trip-budget";
+import WishList from "@/components/tools/wish-list";
+
+// Styling
+const tabTriggerStyles = `
+  relative
+  shrink-0
+  whitespace-nowrap
+  rounded-none
+  border-b-2
+  border-transparent
+  bg-transparent
+  px-4
+  py-3
+  text-sm
+  font-medium
+  text-muted-foreground
+  shadow-none
+  transition-all
+  duration-200
+
+  hover:text-foreground
+
+  data-[selected]:border-primary
+  data-[selected]:text-foreground
+  data-[selected]:bg-transparent
+`;
+
+const tabContentStyles = `
+  mt-6
+  animate-in
+  fade-in-0
+  slide-in-from-bottom-2
+  duration-300
+`;
 
 const Tools = () => {
   return (
@@ -12,7 +52,36 @@ const Tools = () => {
         </div>
       </header>
 
-      <section className="mt-4"></section>
+      <section className="mt-4">
+        <Tabs defaultSelectedKey="paycheck">
+          <TabsList className="w-full">
+            <TabsTrigger id="paycheck">Paycheck Splitter</TabsTrigger>
+            <TabsTrigger id="salary">Salary Converter</TabsTrigger>
+            <TabsTrigger id="bill">Bill Splitter</TabsTrigger>
+            <TabsTrigger id="interest">Compound Interest</TabsTrigger>
+            <TabsTrigger id="trip">Trip Budget</TabsTrigger>
+            <TabsTrigger id="wish">Wish List</TabsTrigger>
+          </TabsList>
+          <TabsContent id="paycheck" className="w-full">
+            <PaycheckSplitter />
+          </TabsContent>
+          <TabsContent id="salary">
+            <SalaryConverter />
+          </TabsContent>
+          <TabsContent id="bill">
+            <BillSplitter />
+          </TabsContent>
+          <TabsContent id="interest">
+            <CompoundInsert />
+          </TabsContent>
+          <TabsContent id="trip">
+            <TripBudget />
+          </TabsContent>
+          <TabsContent id="wish">
+            <WishList />
+          </TabsContent>
+        </Tabs>
+      </section>
     </PageTransition>
   );
 };
