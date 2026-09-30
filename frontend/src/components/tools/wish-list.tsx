@@ -1258,27 +1258,16 @@ export default function WishList() {
                 <div className="w-full overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Rank</TableHead>
-
-                        <TableHead>Item</TableHead>
-
-                        <TableHead>Category</TableHead>
-
-                        <TableHead>Price</TableHead>
-
-                        <TableHead>Deadline</TableHead>
-
-                        <TableHead>Importance</TableHead>
-
-                        <TableHead>Value</TableHead>
-
-                        <TableHead>Urgency</TableHead>
-
-                        <TableHead>Score</TableHead>
-
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
+                      <TableHead isRowHeader>Rank</TableHead>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Deadline</TableHead>
+                      <TableHead>Importance</TableHead>
+                      <TableHead>Value</TableHead>
+                      <TableHead>Urgency</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableHeader>
 
                     <TableBody>
@@ -1535,17 +1524,11 @@ export default function WishList() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Item</TableHead>
-
-                        <TableHead>Deadline</TableHead>
-
-                        <TableHead>Time Left</TableHead>
-
-                        <TableHead>Price</TableHead>
-
-                        <TableHead>Score</TableHead>
-                      </TableRow>
+                      <TableHead isRowHeader>Item</TableHead>
+                      <TableHead>Deadline</TableHead>
+                      <TableHead>Time Left</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Score</TableHead>
                     </TableHeader>
 
                     <TableBody>

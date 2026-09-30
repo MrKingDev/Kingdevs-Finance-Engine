@@ -25,19 +25,12 @@ type ExpenseItem = {
   category: string;
   name: string;
   enabled: boolean;
-
   units: number;
   rate: number;
   splitBy: number;
-
   basis: string;
-
   actual: string;
-
   kind: ExpenseKind;
-
-  // Only one item in an exclusive group
-  // should normally be selected.
   group?: "ticket" | "travel" | "lodging";
 };
 
@@ -53,6 +46,7 @@ const initialExpenses: ExpenseItem[] = [
   // =========================
   // CONCERT
   // =========================
+
   {
     id: "ga",
     category: "Concert",
@@ -96,6 +90,7 @@ const initialExpenses: ExpenseItem[] = [
   // =========================
   // TRAVEL
   // =========================
+
   {
     id: "plane",
     category: "Travel",
@@ -176,6 +171,7 @@ const initialExpenses: ExpenseItem[] = [
   // =========================
   // LOCAL TRANSPORT
   // =========================
+
   {
     id: "uber",
     category: "Local Transport",
@@ -216,6 +212,7 @@ const initialExpenses: ExpenseItem[] = [
   // =========================
   // LODGING
   // =========================
+
   {
     id: "single-hotel",
     category: "Lodging",
@@ -259,6 +256,7 @@ const initialExpenses: ExpenseItem[] = [
   // =========================
   // FOOD
   // =========================
+
   {
     id: "festival-food",
     category: "Food",
@@ -299,6 +297,7 @@ const initialExpenses: ExpenseItem[] = [
   // =========================
   // NIGHTLIFE
   // =========================
+
   {
     id: "after-parties",
     category: "Nightlife",
@@ -327,6 +326,7 @@ const initialExpenses: ExpenseItem[] = [
   // =========================
   // SHOPPING
   // =========================
+
   {
     id: "vendors",
     category: "Shopping",
@@ -355,6 +355,7 @@ const initialExpenses: ExpenseItem[] = [
   // =========================
   // EMERGENCY
   // =========================
+
   {
     id: "surge",
     category: "Emergency",
@@ -405,8 +406,9 @@ const initialExpenses: ExpenseItem[] = [
   },
 
   // =========================
-  // REFUNDABLE HOLD
+  // HOLD BUFFER
   // =========================
+
   {
     id: "hotel-hold",
     category: "Hold Buffer",
@@ -546,7 +548,7 @@ export default function TripBudget() {
   };
 
   // ========================================
-  // UPDATE ITEM
+  // UPDATE EXPENSE
   // ========================================
 
   const updateExpense = (
@@ -570,12 +572,12 @@ export default function TripBudget() {
   // ENABLE / DISABLE
   // ========================================
 
-  const toggleExpense = (expense: ExpenseItem, checked: boolean) => {
+  const toggleExpense = (expense: ExpenseItem, selected: boolean) => {
     setExpenses((current) =>
       current.map((item) => {
-        // Ticket / Travel / Lodging behave like
-        // exclusive selections.
-        if (expense.group && checked) {
+        // Exclusive selections:
+        // ticket / travel / lodging
+        if (expense.group && selected) {
           if (item.group === expense.group) {
             return {
               ...item,
@@ -587,7 +589,7 @@ export default function TripBudget() {
         if (item.id === expense.id) {
           return {
             ...item,
-            enabled: checked,
+            enabled: selected,
           };
         }
 
@@ -728,12 +730,13 @@ export default function TripBudget() {
       </div>
 
       {/* =====================================
-          TRIP INFO
+          TRIP DETAILS
       ===================================== */}
 
       <Card>
         <CardHeader>
           <CardTitle>Trip Details</CardTitle>
+
           <CardDescription>
             Basic information used throughout your budget.
           </CardDescription>
@@ -794,19 +797,21 @@ export default function TripBudget() {
           TABS
       ===================================== */}
 
-      <Tabs defaultValue="budget">
+      <Tabs defaultSelectedKey="budget" className="w-full">
         <TabsList>
-          <TabsTrigger value="budget">Budget</TabsTrigger>
+          <TabsTrigger id="budget">Budget</TabsTrigger>
 
-          <TabsTrigger value="checklist">Trip Checklist</TabsTrigger>
+          <TabsTrigger id="checklist">Trip Checklist</TabsTrigger>
         </TabsList>
 
         {/* =====================================
             BUDGET
         ===================================== */}
 
-        <TabsContent value="budget" className="mt-6 space-y-6">
-          {/* SUMMARY */}
+        <TabsContent id="budget" className="mt-6 space-y-6">
+          {/* =====================================
+              SUMMARY
+          ===================================== */}
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <SummaryCard
@@ -846,7 +851,9 @@ export default function TripBudget() {
             />
           </div>
 
-          {/* SAVED */}
+          {/* =====================================
+              SAVED
+          ===================================== */}
 
           <Card>
             <CardContent className="pt-6">
@@ -877,7 +884,9 @@ export default function TripBudget() {
             </CardContent>
           </Card>
 
-          {/* EXPENSE CATEGORIES */}
+          {/* =====================================
+              EXPENSE CATEGORIES
+          ===================================== */}
 
           {categoryOrder.map((category) => {
             const categoryItems = expenses.filter(
@@ -917,13 +926,13 @@ export default function TripBudget() {
                 <CardContent className="space-y-3">
                   {categoryItems.map((item) => {
                     const budget = calculateBudget(item);
-
                     const actual = parseActual(item.actual);
-
                     const difference = budget - actual;
 
                     return (
                       <div key={item.id} className="rounded-lg border p-4">
+                        {/* TOP ROW */}
+
                         <div className="flex items-center justify-between gap-4">
                           <div>
                             <p className="font-medium">{item.name}</p>
@@ -934,12 +943,14 @@ export default function TripBudget() {
                           </div>
 
                           <Switch
-                            checked={item.enabled}
-                            onCheckedChange={(checked) =>
-                              toggleExpense(item, checked)
+                            isSelected={item.enabled}
+                            onChange={(selected) =>
+                              toggleExpense(item, selected)
                             }
                           />
                         </div>
+
+                        {/* EXPENSE CONTROLS */}
 
                         {item.enabled && (
                           <>
@@ -1020,7 +1031,7 @@ export default function TripBudget() {
                                 />
                               </div>
 
-                              {/* BUDGET */}
+                              {/* YOUR BUDGET */}
 
                               <div className="space-y-2">
                                 <Label>Your Budget</Label>
@@ -1060,6 +1071,8 @@ export default function TripBudget() {
                                 </div>
                               )}
                             </div>
+
+                            {/* OVER / UNDER BUDGET */}
 
                             {item.actual !== "" && item.kind !== "hold" && (
                               <div className="mt-3 flex justify-end">
@@ -1118,6 +1131,8 @@ export default function TripBudget() {
                   key={item.id}
                   className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-[1.2fr_140px_140px_1.5fr_auto]"
                 >
+                  {/* ITEM */}
+
                   <div className="space-y-2">
                     <Label>Item</Label>
 
@@ -1130,39 +1145,59 @@ export default function TripBudget() {
                     />
                   </div>
 
+                  {/* BUDGET */}
+
                   <div className="space-y-2">
                     <Label>Budget</Label>
 
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.budget || ""}
-                      placeholder="0.00"
-                      onChange={(event) =>
-                        updateExtra(
-                          item.id,
-                          "budget",
-                          Math.max(0, Number(event.target.value) || 0),
-                        )
-                      }
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        $
+                      </span>
+
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="pl-7"
+                        value={item.budget || ""}
+                        placeholder="0.00"
+                        onChange={(event) =>
+                          updateExtra(
+                            item.id,
+                            "budget",
+                            Math.max(0, Number(event.target.value) || 0),
+                          )
+                        }
+                      />
+                    </div>
                   </div>
+
+                  {/* ACTUAL */}
 
                   <div className="space-y-2">
                     <Label>Actual</Label>
 
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.actual}
-                      placeholder="0.00"
-                      onChange={(event) =>
-                        updateExtra(item.id, "actual", event.target.value)
-                      }
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        $
+                      </span>
+
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="pl-7"
+                        value={item.actual}
+                        placeholder="0.00"
+                        onChange={(event) =>
+                          updateExtra(item.id, "actual", event.target.value)
+                        }
+                      />
+                    </div>
                   </div>
+
+                  {/* NOTES */}
 
                   <div className="space-y-2">
                     <Label>Notes</Label>
@@ -1175,6 +1210,8 @@ export default function TripBudget() {
                       }
                     />
                   </div>
+
+                  {/* DELETE */}
 
                   <div className="flex items-end">
                     <Button
@@ -1191,7 +1228,7 @@ export default function TripBudget() {
           </Card>
 
           {/* =====================================
-              CATEGORY BREAKDOWN
+              BUDGET BREAKDOWN
           ===================================== */}
 
           <Card>
@@ -1235,7 +1272,7 @@ export default function TripBudget() {
 
               <Separator />
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <span className="font-semibold">Total Funds to Prepare</span>
 
                 <span className="text-xl font-bold">
@@ -1250,7 +1287,7 @@ export default function TripBudget() {
             TRIP CHECKLIST
         ===================================== */}
 
-        <TabsContent value="checklist" className="mt-6">
+        <TabsContent id="checklist" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle>Trip Plan & Booking Checklist</CardTitle>

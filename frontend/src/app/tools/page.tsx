@@ -6,6 +6,7 @@ import BillSplitter from "@/components/tools/tip-calculator";
 import CompoundInsert from "@/components/tools/compound-interest";
 import TripBudget from "@/components/tools/trip-budget";
 import WishList from "@/components/tools/wish-list";
+import Subscriptions from "@/components/tools/subscriptions";
 
 // Styling
 const tabTriggerStyles = `
@@ -53,8 +54,9 @@ const Tools = () => {
       </header>
 
       <section className="mt-4">
-        <Tabs defaultSelectedKey="paycheck">
+        <Tabs defaultSelectedKey="sub">
           <TabsList className="w-full">
+            <TabsTrigger id="sub">Subscription Checker</TabsTrigger>
             <TabsTrigger id="paycheck">Paycheck Splitter</TabsTrigger>
             <TabsTrigger id="salary">Salary Converter</TabsTrigger>
             <TabsTrigger id="bill">Bill Splitter</TabsTrigger>
@@ -62,7 +64,10 @@ const Tools = () => {
             <TabsTrigger id="trip">Trip Budget</TabsTrigger>
             <TabsTrigger id="wish">Wish List</TabsTrigger>
           </TabsList>
-          <TabsContent id="paycheck" className="w-full">
+          <TabsContent id="sub">
+            <Subscriptions />
+          </TabsContent>
+          <TabsContent id="paycheck">
             <PaycheckSplitter />
           </TabsContent>
           <TabsContent id="salary">

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import {
   fromDate,
   getLocalTimeZone,
@@ -8,22 +9,32 @@ import {
   toCalendarDate,
   type CalendarDate,
 } from "@internationalized/date";
+
 import { CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+
 import { Calendar } from "@/components/ui/calendar";
+
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
+
 import { Popover, PopoverTrigger } from "@/components/ui/popover";
 
 interface DatePickerInputProps {
   className?: string;
   id?: string;
-  // ...other existing props
+
+  // YYYY-MM-DD
+  value?: string;
+
+  onChange?: (value: string) => void;
+
+  placeholder?: string;
 }
 
 function formatDate(date: Date | undefined) {
@@ -42,52 +53,112 @@ function isValidDate(date: Date | undefined) {
   if (!date) {
     return false;
   }
-  return !isNaN(date.getTime());
+
+  return !Number.isNaN(date.getTime());
 }
 
-export function DatePickerInput({ className, id }: DatePickerInputProps) {
+function getCalendarDate(value?: string): CalendarDate | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  try {
+    return parseDate(value);
+  } catch {
+    return undefined;
+  }
+}
+
+export function DatePickerInput({
+  className,
+  id,
+  value,
+  onChange,
+  placeholder = "Select date",
+}: DatePickerInputProps) {
   const [open, setOpen] = React.useState(false);
-  const [date, setDate] = React.useState<CalendarDate | undefined>(
-    parseDate("2025-06-01"),
-  );
-  const [month, setMonth] = React.useState<CalendarDate>(date!);
-  const [value, setValue] = React.useState(
-    formatDate(date?.toDate(getLocalTimeZone())),
+
+  const initialDate = getCalendarDate(value);
+
+  const [date, setDate] = React.useState<CalendarDate | undefined>(initialDate);
+
+  const [month, setMonth] = React.useState<CalendarDate | undefined>(
+    initialDate,
   );
 
+  const [inputValue, setInputValue] = React.useState(() => {
+    if (!initialDate) {
+      return "";
+    }
+
+    return formatDate(initialDate.toDate(getLocalTimeZone()));
+  });
+
+  // Keep picker synced with parent form value
+  React.useEffect(() => {
+    const newDate = getCalendarDate(value);
+
+    setDate(newDate);
+
+    if (newDate) {
+      setMonth(newDate);
+
+      setInputValue(formatDate(newDate.toDate(getLocalTimeZone())));
+    } else {
+      setInputValue("");
+    }
+  }, [value]);
+
+  const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.value;
+
+    setInputValue(newValue);
+
+    const parsedDate = new Date(newValue);
+
+    if (!isValidDate(parsedDate)) {
+      return;
+    }
+
+    const calendarDate = toCalendarDate(
+      fromDate(parsedDate, getLocalTimeZone()),
+    );
+
+    setDate(calendarDate);
+    setMonth(calendarDate);
+
+    onChange?.(calendarDate.toString());
+  };
+
   return (
-    <div className={cn("relative", className)} id={cn("relative", id)}>
+    <div id={id} className={cn("relative", className)}>
       <InputGroup>
         <InputGroupInput
-          id="date-required"
-          value={value}
-          placeholder="June 01, 2025"
-          onChange={(e) => {
-            const date = new Date(e.target.value);
-            setValue(e.target.value);
-            if (isValidDate(date)) {
-              setDate(toCalendarDate(fromDate(date, getLocalTimeZone())));
-              setMonth(toCalendarDate(fromDate(date, getLocalTimeZone())));
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
+          id={id ? `${id}-input` : undefined}
+          value={inputValue}
+          placeholder={placeholder}
+          onChange={handleTextChange}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
               setOpen(true);
             }
           }}
         />
+
         <InputGroupAddon align="inline-end">
           <PopoverTrigger isOpen={open} onOpenChange={setOpen}>
             <InputGroupButton
-              id="date-picker"
+              id={id ? `${id}-date-picker` : undefined}
               variant="ghost"
               size="icon-xs"
               aria-label="Select date"
             >
               <CalendarIcon />
+
               <span className="sr-only">Select date</span>
             </InputGroupButton>
+
             <Popover
               className="w-auto overflow-hidden p-0"
               placement="bottom end"
@@ -97,10 +168,29 @@ export function DatePickerInput({ className, id }: DatePickerInputProps) {
               <Calendar
                 value={date}
                 focusedValue={month}
-                onFocusChange={setMonth}
-                onChange={(date) => {
-                  setDate(date);
-                  setValue(formatDate(date?.toDate(getLocalTimeZone())));
+                onFocusChange={(newMonth) => setMonth(newMonth)}
+                onChange={(selectedDate) => {
+                  if (!selectedDate) {
+                    setDate(undefined);
+                    setInputValue("");
+
+                    onChange?.("");
+
+                    setOpen(false);
+
+                    return;
+                  }
+
+                  setDate(selectedDate);
+                  setMonth(selectedDate);
+
+                  setInputValue(
+                    formatDate(selectedDate.toDate(getLocalTimeZone())),
+                  );
+
+                  // Gives parent YYYY-MM-DD
+                  onChange?.(selectedDate.toString());
+
                   setOpen(false);
                 }}
               />

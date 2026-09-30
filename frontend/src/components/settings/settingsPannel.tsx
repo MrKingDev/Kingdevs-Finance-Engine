@@ -10,39 +10,6 @@ import {
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Styling
-const tabTriggerStyles = `
-  relative
-  shrink-0
-  whitespace-nowrap
-  rounded-none
-  border-b-2
-  border-transparent
-  bg-transparent
-  px-4
-  py-3
-  text-sm
-  font-medium
-  text-muted-foreground
-  shadow-none
-  transition-all
-  duration-200
-
-  hover:text-foreground
-
-  data-[selected]:border-primary
-  data-[selected]:text-foreground
-  data-[selected]:bg-transparent
-`;
-
-const tabContentStyles = `
-  mt-6
-  animate-in
-  fade-in-0
-  slide-in-from-bottom-2
-  duration-300
-`;
-
 const tabOptions = [
   {
     label: "Import CSV",
@@ -128,6 +95,22 @@ const tabOptions = [
           <CardDescription>
             Organize spending with accessible colors and icons.
           </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <p>Option 5 content</p>
+        </CardContent>
+      </Card>
+    ),
+  },
+  {
+    label: "Clear Data",
+    optionId: "data",
+    content: (
+      <Card>
+        <CardHeader>
+          <CardTitle>CLEAR DATA</CardTitle>
+          <CardDescription>Clear all data</CardDescription>
         </CardHeader>
 
         <CardContent>
