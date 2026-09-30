@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ClearData from "./pages/clearData";
 
 const tabOptions = [
   {
@@ -110,11 +111,15 @@ const tabOptions = [
       <Card>
         <CardHeader>
           <CardTitle>CLEAR DATA</CardTitle>
-          <CardDescription>Clear all data</CardDescription>
+          <CardDescription>
+            This deletes transactions, budgets, goals, rules, and custom
+            categories from the database. It cannot be undone. In the dev
+            profile, sample data returns when the backend restarts.
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
-          <p>Option 5 content</p>
+          <ClearData />
         </CardContent>
       </Card>
     ),
