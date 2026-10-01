@@ -1,4 +1,4 @@
-# King Dev's Finance Engine
+# KingDev's Finance Engine
 
 A personal finance application for viewing income, expenses, transactions, budgets, savings goals, and reports in one interface.
 
