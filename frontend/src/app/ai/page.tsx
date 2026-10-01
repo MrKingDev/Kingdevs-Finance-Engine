@@ -1,5 +1,5 @@
 import PageTransition from "@/components/pageTransitions";
-
+import { Button } from "@/components/ui/button";
 const AI = () => {
   return (
     <PageTransition>
@@ -11,6 +11,8 @@ const AI = () => {
           </p>
         </div>
       </header>
+
+      <section></section>
     </PageTransition>
   );
 };

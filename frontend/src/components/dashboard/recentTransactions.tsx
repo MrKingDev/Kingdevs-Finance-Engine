@@ -1,14 +1,23 @@
-import transactionData from "@/data/transactionData.json";
+// API
+const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions`);
+
+if (!response.ok) {
+  throw new Error("Failed to fetch transactions");
+}
+
+const transactions = await response.json();
+
+// Imports
 import { Separator } from "@/components/ui/separator";
 
 const RecentTransactions = () => {
-  const recentTransactions = [...transactionData]
+  const recentTransactions = [...transactions]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
   return (
     <>
       {recentTransactions.map((transaction, index) => {
-        const isIncome = transaction.type === "Income";
+        const isIncome = transaction.type === "income";
         return (
           <div key={transaction.id}>
             <div className="flex items-center gap-4 py-4">

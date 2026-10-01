@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FaGithub } from "react-icons/fa";
 import { LuCrown } from "react-icons/lu";
+import { BackendTest } from "@/components/backend-test";
 
 export default function Home() {
   return (
@@ -34,6 +35,9 @@ export default function Home() {
             </Link>
           </Button>
         </div>
+        <p className="mt-3 text-muted-foreground">
+          <BackendTest />
+        </p>
       </div>
     </main>
   );

@@ -12,7 +12,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 
-import transactionData from "@/data/transactionData.json";
+// API
+const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions`);
+
+if (!response.ok) {
+  throw new Error("Failed to fetch transactions");
+}
+
+const transactions = await response.json();
 
 const TransactionsTable = () => {
   const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -26,11 +33,11 @@ const TransactionsTable = () => {
       <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           <span className="font-medium text-foreground">
-            {transactionData.length}
+            {transactions.length}
           </span>{" "}
           of{" "}
           <span className="font-medium text-foreground">
-            {transactionData.length}
+            {transactions.length}
           </span>{" "}
           transactions
         </p>
@@ -74,7 +81,7 @@ const TransactionsTable = () => {
           </TableHeader>
 
           <TableBody renderEmptyState={() => "No transactions found."}>
-            {transactionData.map((transaction) => (
+            {transactions.map((transaction) => (
               <TableRow key={transaction.id} id={transaction.id}>
                 {/* Date */}
                 <TableCell className="whitespace-nowrap">
@@ -104,12 +111,12 @@ const TransactionsTable = () => {
                 {/* Amount */}
                 <TableCell
                   className={`whitespace-nowrap text-right font-medium ${
-                    transaction.type === "Income"
+                    transaction.type === "income"
                       ? "text-green-600 dark:text-green-400"
                       : ""
                   }`}
                 >
-                  {transaction.type === "Income" ? "+" : "-"}
+                  {transaction.type === "income" ? "+" : "-"}
                   {currencyFormatter.format(transaction.amount)}
                 </TableCell>
 
