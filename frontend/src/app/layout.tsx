@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Header from "@/components/header";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 const nunitoSansHeading = Nunito_Sans({
   subsets: ["latin"],
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <main className="min-w-0 flex-1 overflow-x-hidden p-6 lg:pl-8">
               {children}
             </main>
+            <Toaster />
           </div>
         </ThemeProvider>
       </body>

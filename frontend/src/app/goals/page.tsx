@@ -1,10 +1,16 @@
-import PageTransition from "@/components/pageTransitions";
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+
+import PageTransition from "@/components/pageTransitions";
+import GoalCard from "@/components/goal/goalCard";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { DatePickerInput } from "@/components/ui/date-picker";
+
+import { Plus } from "lucide-react";
 
 import {
   Select,
@@ -15,11 +21,86 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { DatePickerInput } from "@/components/ui/date-picker";
+import {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
-import GoalCard from "@/components/goal/goalCard";
+export type Goal = {
+  id: number;
+  name: string;
+  type: "Savings" | "Debt Payoff";
+  targetAmount: number;
+  targetDate?: string;
+  contributed: number;
+  documentedIncome: number;
+  necessaryExpenses: number;
+};
 
 const Goals = () => {
+  // --------------------------------
+  // Goals
+  // --------------------------------
+
+  const [goals, setGoals] = useState<Goal[]>([]);
+
+  // --------------------------------
+  // Create Goal Form
+  // --------------------------------
+
+  const [goalName, setGoalName] = useState("");
+
+  const [goalType, setGoalType] = useState<"Savings" | "Debt Payoff">(
+    "Savings",
+  );
+
+  const [targetAmount, setTargetAmount] = useState("");
+
+  const [targetDate, setTargetDate] = useState("");
+
+  // --------------------------------
+  // Create Goal
+  // --------------------------------
+
+  const handleCreateGoal = () => {
+    if (!goalName.trim()) {
+      return;
+    }
+
+    if (!targetAmount || Number(targetAmount) <= 0) {
+      return;
+    }
+
+    const newGoal: Goal = {
+      id: Date.now(),
+      name: goalName.trim(),
+      type: goalType,
+      targetAmount: Number(targetAmount),
+      targetDate: targetDate || undefined,
+      contributed: 0,
+      documentedIncome: 0,
+      necessaryExpenses: 0,
+    };
+
+    setGoals((currentGoals) => [...currentGoals, newGoal]);
+
+    // Reset form
+    setGoalName("");
+    setGoalType("Savings");
+    setTargetAmount("");
+    setTargetDate("");
+  };
+
+  // --------------------------------
+  // Delete Goal
+  // --------------------------------
+
+  const handleDeleteGoal = (id: number) => {
+    setGoals((currentGoals) => currentGoals.filter((goal) => goal.id !== id));
+  };
+
   return (
     <PageTransition>
       <div className="w-full min-w-0">
@@ -33,17 +114,20 @@ const Goals = () => {
               necessary expenses, then record what you put toward the goal.
             </p>
           </div>
-        </header>
 
-        {/* Create Goal */}
-        <section className="mt-4">
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle>Create a goal</CardTitle>
-            </CardHeader>
+          {/* Create Goal Dialog */}
+          <DialogTrigger>
+            <Button className="w-full sm:w-auto">
+              <Plus className="size-4" />
+              Create Goal
+            </Button>
 
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Dialog>
+              <DialogHeader>
+                <DialogTitle>Create A Goal</DialogTitle>
+              </DialogHeader>
+
+              <div>
                 {/* Goal Name */}
                 <Field className="min-w-0">
                   <FieldLabel htmlFor="goal-name">Goal Name</FieldLabel>
@@ -53,69 +137,92 @@ const Goals = () => {
                     type="text"
                     placeholder="Emergency Fund"
                     className="w-full"
+                    value={goalName}
+                    onChange={(event) => setGoalName(event.target.value)}
                   />
                 </Field>
 
                 {/* Goal Type */}
-                <Field className="min-w-0">
-                  <FieldLabel htmlFor="goal-type">Goal Type</FieldLabel>
+                <Field className="mt-2 min-w-0">
+                  <FieldLabel>Goal Type</FieldLabel>
 
                   <Select
                     placeholder="Pick a Type"
-                    id="goal-type"
-                    className="w-full"
+                    value={goalType}
+                    onChange={(value) => {
+                      if (value === "Savings" || value === "Debt Payoff") {
+                        setGoalType(value);
+                      }
+                    }}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="goal-type" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
 
                     <SelectContent>
                       <SelectGroup>
-                        <SelectItem>Savings</SelectItem>
+                        <SelectItem id="Savings">Savings</SelectItem>
 
-                        <SelectItem>Debt Payoff</SelectItem>
+                        <SelectItem id="Debt Payoff">Debt Payoff</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>
 
                 {/* Target Amount */}
-                <Field className="min-w-0">
+                <Field className="mt-2 min-w-0">
                   <FieldLabel htmlFor="target-amount">Target Amount</FieldLabel>
 
                   <Input
                     id="target-amount"
                     type="number"
-                    placeholder="$0.00"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
                     className="w-full"
+                    value={targetAmount}
+                    onChange={(event) => setTargetAmount(event.target.value)}
                   />
                 </Field>
 
                 {/* Target Date */}
-                <Field className="min-w-0">
+                <Field className="mt-2 min-w-0">
                   <FieldLabel htmlFor="target-date">
                     Target Date (optional)
                   </FieldLabel>
 
-                  <DatePickerInput id="target-date" className="w-full" />
+                  <DatePickerInput
+                    id="target-date"
+                    className="w-full"
+                    value={targetDate}
+                    onChange={setTargetDate}
+                  />
                 </Field>
-              </div>
 
-              {/* Create Button */}
-              <div className="mt-6 flex justify-end">
-                <Button className="w-full sm:w-auto">Create Goal</Button>
+                {/* Submit */}
+                <Button className="mt-4 w-full" onClick={handleCreateGoal}>
+                  Create Goal
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </section>
+            </Dialog>
+          </DialogTrigger>
+        </header>
 
         {/* Goals */}
         <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <GoalCard />
-          <GoalCard />
-          <GoalCard />
-          <GoalCard />
+          {goals.map((goal) => (
+            <GoalCard key={goal.id} goal={goal} onDelete={handleDeleteGoal} />
+          ))}
         </section>
+
+        {/* Empty State */}
+        {goals.length === 0 && (
+          <div className="mt-10 text-center text-muted-foreground">
+            <p>No goals yet.</p>
+
+            <p className="text-sm">Create your first goal to get started.</p>
+          </div>
+        )}
       </div>
     </PageTransition>
   );
