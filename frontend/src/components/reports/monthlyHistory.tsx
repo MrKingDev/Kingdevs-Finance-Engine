@@ -1,8 +1,15 @@
-import transactionData from "@/data/transactionData.json";
+const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions`);
+
+if (!response.ok) {
+  throw new Error("Failed to fetch transactions");
+}
+
+const transactions = await response.json();
+
 import { Separator } from "@/components/ui/separator";
 
 const MonthlyHistory = () => {
-  const monthlyTotals = transactionData.reduce((acc, transaction) => {
+  const monthlyTotals = transactions.reduce((acc, transaction) => {
     const date = new Date(transaction.date);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const amount =

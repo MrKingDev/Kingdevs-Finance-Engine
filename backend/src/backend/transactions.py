@@ -8,9 +8,9 @@ router = APIRouter(
 @router.get("")
 def get_transactions():
     return [
-            {
+        {
             "id": 1,
-            "date": "09/20/2026",
+            "date": "2026-09-20",
             "merchant": "Walmart",
             "category": "Groceries",
             "bank": "Chase",
@@ -19,7 +19,7 @@ def get_transactions():
         },
         {
             "id": 2,
-            "date": "09/21/2026",
+            "date": "2026-09-21",
             "merchant": "Employer",
             "category": "Salary",
             "bank": "Chase",
@@ -28,7 +28,7 @@ def get_transactions():
         },
         {
             "id": 3,
-            "date": "09/21/2026",
+            "date": "2026-09-21",
             "merchant": "Starbucks",
             "category": "Dining",
             "bank": "Chase",
@@ -37,7 +37,7 @@ def get_transactions():
         },
         {
             "id": 4,
-            "date": "09/22/2026",
+            "date": "2026-09-22",
             "merchant": "Shell",
             "category": "Gas",
             "bank": "Bank of America",
@@ -46,7 +46,7 @@ def get_transactions():
         },
         {
             "id": 5,
-            "date": "09/22/2026",
+            "date": "2026-09-22",
             "merchant": "Netflix",
             "category": "Subscriptions",
             "bank": "Chase",
@@ -55,7 +55,7 @@ def get_transactions():
         },
         {
             "id": 6,
-            "date": "09/23/2026",
+            "date": "2026-09-23",
             "merchant": "Amazon",
             "category": "Shopping",
             "bank": "Capital One",
@@ -64,7 +64,7 @@ def get_transactions():
         },
         {
             "id": 7,
-            "date": "09/23/2026",
+            "date": "2026-09-23",
             "merchant": "Freelance Client",
             "category": "Freelance",
             "bank": "Chase",
@@ -73,7 +73,7 @@ def get_transactions():
         },
         {
             "id": 8,
-            "date": "09/24/2026",
+            "date": "2026-09-24",
             "merchant": "Chipotle",
             "category": "Dining",
             "bank": "Capital One",
@@ -82,7 +82,7 @@ def get_transactions():
         },
         {
             "id": 9,
-            "date": "09/24/2026",
+            "date": "2026-09-24",
             "merchant": "National Grid",
             "category": "Utilities",
             "bank": "Chase",
@@ -91,7 +91,7 @@ def get_transactions():
         },
         {
             "id": 10,
-            "date": "09/25/2026",
+            "date": "2026-09-25",
             "merchant": "Target",
             "category": "Shopping",
             "bank": "Bank of America",
@@ -100,7 +100,7 @@ def get_transactions():
         },
         {
             "id": 11,
-            "date": "09/25/2026",
+            "date": "2026-09-25",
             "merchant": "Spotify",
             "category": "Subscriptions",
             "bank": "Chase",
@@ -109,7 +109,7 @@ def get_transactions():
         },
         {
             "id": 12,
-            "date": "09/26/2026",
+            "date": "2026-09-26",
             "merchant": "Hannaford",
             "category": "Groceries",
             "bank": "Chase",
@@ -118,7 +118,7 @@ def get_transactions():
         },
         {
             "id": 13,
-            "date": "09/26/2026",
+            "date": "2026-09-26",
             "merchant": "Uber",
             "category": "Transportation",
             "bank": "Capital One",
@@ -127,7 +127,7 @@ def get_transactions():
         },
         {
             "id": 14,
-            "date": "09/27/2026",
+            "date": "2026-09-27",
             "merchant": "AMC Theatres",
             "category": "Entertainment",
             "bank": "Chase",
@@ -136,7 +136,7 @@ def get_transactions():
         },
         {
             "id": 15,
-            "date": "09/27/2026",
+            "date": "2026-09-27",
             "merchant": "CVS",
             "category": "Healthcare",
             "bank": "Bank of America",
@@ -145,7 +145,7 @@ def get_transactions():
         },
         {
             "id": 16,
-            "date": "09/28/2026",
+            "date": "2026-09-28",
             "merchant": "Employer",
             "category": "Salary",
             "bank": "Chase",
@@ -154,7 +154,7 @@ def get_transactions():
         },
         {
             "id": 17,
-            "date": "09/28/2026",
+            "date": "2026-09-28",
             "merchant": "Verizon",
             "category": "Phone",
             "bank": "Chase",
@@ -163,7 +163,7 @@ def get_transactions():
         },
         {
             "id": 18,
-            "date": "09/28/2026",
+            "date": "2026-09-28",
             "merchant": "Planet Fitness",
             "category": "Fitness",
             "bank": "Capital One",
@@ -172,7 +172,7 @@ def get_transactions():
         },
         {
             "id": 19,
-            "date": "09/29/2026",
+            "date": "2026-09-29",
             "merchant": "Whole Foods",
             "category": "Groceries",
             "bank": "Chase",
@@ -181,7 +181,7 @@ def get_transactions():
         },
         {
             "id": 20,
-            "date": "09/29/2026",
+            "date": "2026-09-29",
             "merchant": "DoorDash",
             "category": "Dining",
             "bank": "Capital One",
@@ -190,7 +190,7 @@ def get_transactions():
         },
         {
             "id": 21,
-            "date": "09/29/2026",
+            "date": "2026-09-29",
             "merchant": "Etsy Sale",
             "category": "Side Income",
             "bank": "Bank of America",
@@ -199,7 +199,7 @@ def get_transactions():
         },
         {
             "id": 22,
-            "date": "09/30/2026",
+            "date": "2026-09-30",
             "merchant": "Apple",
             "category": "Subscriptions",
             "bank": "Chase",
@@ -208,7 +208,7 @@ def get_transactions():
         },
         {
             "id": 23,
-            "date": "09/30/2026",
+            "date": "2026-09-30",
             "merchant": "Exxon",
             "category": "Gas",
             "bank": "Bank of America",
@@ -217,7 +217,7 @@ def get_transactions():
         },
         {
             "id": 24,
-            "date": "09/30/2026",
+            "date": "2026-09-30",
             "merchant": "Best Buy",
             "category": "Electronics",
             "bank": "Capital One",
@@ -226,7 +226,7 @@ def get_transactions():
         },
         {
             "id": 25,
-            "date": "10/01/2026",
+            "date": "2026-10-01",
             "merchant": "Panera Bread",
             "category": "Dining",
             "bank": "Chase",
@@ -235,7 +235,7 @@ def get_transactions():
         },
         {
             "id": 26,
-            "date": "10/01/2026",
+            "date": "2026-10-01",
             "merchant": "Rent Payment",
             "category": "Housing",
             "bank": "Chase",
@@ -244,7 +244,7 @@ def get_transactions():
         },
         {
             "id": 27,
-            "date": "10/01/2026",
+            "date": "2026-10-01",
             "merchant": "Interest Payment",
             "category": "Interest",
             "bank": "Bank of America",
@@ -253,7 +253,7 @@ def get_transactions():
         },
         {
             "id": 28,
-            "date": "10/01/2026",
+            "date": "2026-10-01",
             "merchant": "Trader Joe's",
             "category": "Groceries",
             "bank": "Capital One",
@@ -262,7 +262,7 @@ def get_transactions():
         },
         {
             "id": 29,
-            "date": "10/01/2026",
+            "date": "2026-10-01",
             "merchant": "Steam",
             "category": "Entertainment",
             "bank": "Chase",
@@ -271,29 +271,11 @@ def get_transactions():
         },
         {
             "id": 30,
-            "date": "10/01/2026",
+            "date": "2026-10-01",
             "merchant": "Freelance Client",
             "category": "Freelance",
             "bank": "Chase",
             "type": "income",
             "amount": 425.00,
-        },
-        {
-            "id": 31,
-            "date": "10/02/2026",
-            "merchant": "Freelance Client",
-            "category": "Freelance",
-            "bank": "Chase",
-            "type": "income",
-            "amount": 200.00,
-        },
-        {
-            "id": 32,
-            "date": "10/02/2026",
-            "merchant": "Freelance Client",
-            "category": "Freelance",
-            "bank": "Chase",
-            "type": "income",
-            "amount": 2000.00,
         },
     ]

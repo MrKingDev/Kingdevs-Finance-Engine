@@ -1,8 +1,15 @@
-import transactionData from "@/data/transactionData.json";
+const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions`);
+
+if (!response.ok) {
+  throw new Error("Failed to fetch transactions");
+}
+
+const transactions = await response.json();
+
 import { Separator } from "@/components/ui/separator";
 
 const CategoryBreakdown = () => {
-  const categoryTotals = transactionData.reduce((acc, transaction) => {
+  const categoryTotals = transactions.reduce((acc, transaction) => {
     if (transaction.type === "Income") return acc;
 
     const key = transaction.category;

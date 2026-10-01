@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Calls routs
 from .transactions import router as transactions_router
+from backend.schemas.transaction import (TransactionCreate, TransactionRead,)
 
 app = FastAPI(
     title="KingDev's Finance Engine API",
@@ -30,3 +31,15 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status":"Ok"}
+
+@app.post(
+    "/transactions",
+    response_model=TransactionRead,
+)
+def create_transaction(
+    transaction: TransactionCreate,
+):
+    return {
+        "id": 1,
+        **transaction.model_dump(),
+    }
