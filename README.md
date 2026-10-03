@@ -1,26 +1,30 @@
 # KingDev's Finance Engine
 
-A personal finance application for viewing income, expenses, transactions, budgets, savings goals, and reports in one interface.
+A personal finance application built with Next.js, FastAPI, and PostgreSQL. The interface includes a dashboard, transactions, budgets, goals, reports, and financial planning tools.
 
-The project contains a Next.js frontend and an early FastAPI backend. The frontend fetches sample transactions from the API, supports transaction filtering, and provides local goal management and financial tools. PostgreSQL persistence, authentication, and bank integration are not implemented yet.
+The backend persists transactions, shared categories, and monthly budgets through SQLAlchemy and Alembic, with PostgreSQL running in Docker. Category budgets automatically count matching expenses in their month. Goals and most tools still use browser component state.
 
-The backend currently returns a fixed transaction list. Its create endpoint validates and echoes a transaction without saving it. Goals and most tools use temporary React state; the wish list saves its data in browser localStorage.
+## Documentation
+
+- [Backend setup and Docker/PostgreSQL walkthrough](backend/README.md): configuration, API behavior, troubleshooting and verification.
+- [Migration guide](backend/migrations/README): current schema, Alembic workflow, revision review and rollback.
+- [Coding-agent instructions](AGENTS.md): repository-specific development guidance.
 
 ## Pages and features
 
-| Route | What is available | Current limitations |
+| Route | Available behavior | Current limitations |
 | --- | --- | --- |
-| `/` | Landing page with dashboard, developer website, and GitHub links, plus a backend health indicator. | The indicator checks `/health`; it does not verify a database connection. |
-| `/dashboard` | Balance, income, expense, and savings cards; spending chart; switchable area/bar chart; budget progress; five most recent transactions. | Summary amounts are hardcoded. Month/year selectors do not filter the data, and Add Transaction has no action. |
-| `/transactions` | Fetches API transactions; filters by merchant/category/bank search, type, category, bank, dates, and amount; supports clearing filters and loading/error states. | Filtering is client-side over fixed API records. Add Transaction has no handler. Delete sends a request, but the backend has no delete endpoint. |
-| `/budgets` | Sample budget cards with budget, spent, remaining, and usage indicators. | Cards contain repeated placeholder values; adding and deleting budgets are not implemented. |
-| `/goals` | Creates savings/debt-payoff goals in a dialog; displays target, progress, and income/expense summaries; confirms deletion and displays a toast. | Goals reset on reload. Add Entry fields are present but do not update income, expenses, or contributions. No goal API exists. |
-| `/reports` | Sample charts and summary cards, plus monthly history/category breakdown that fetch transactions from the API. | Report calculations remain in the frontend; income type comparisons need fixing. Summary cards and chart datasets do not reconcile with API transactions. |
-| `/tools` | Subscription Checker, Paycheck Splitter, Salary Converter, Bill Splitter, Compound Interest, Trip Budget, and Wish List tabs. | Tools run in the browser. Only the wish list persists its inputs across reloads; none connects to a financial backend. |
-| `/ai` | An AI assistant page heading and description. | No assistant, model configuration, or AI service is connected. |
-| `/settings` | Tabs for Import CSV, Preferences, Downloadables, Rules, Categories, and Clear Data. | Import/export and management panels are placeholders. Clear Data has no deletion handler; its database/reseeding description does not reflect an implemented backend. |
+| `/` | Landing page, project links and backend health indicator. | Health confirms the API responds, not database readiness. |
+| `/dashboard` | Selected-month income, expenses and savings; cumulative transaction balance; category spending; five recent saved transactions; real budget progress for the selected period. | Most financial metrics are calculated in the browser. Income/expense charts use the current calendar year independently of the page selector. Add Transaction has no action here. |
+| `/transactions` | Saves and deletes PostgreSQL transactions; category suggestions come from the shared category table; client-side search and filters; loading/error/empty states. | No edit UI, server pagination or account model yet; bank filter options remain fixed. |
+| `/budgets` | Creates one budget per category/month/year or an optional All categories budget; displays backend spending, remaining and usage; supports deletion. | No edit UI is connected; updates are available through the API. |
+| `/goals` | Creates savings/debt-payoff goals locally; displays progress; confirms deletion and shows a toast. | Goals reset on reload. Add Entry fields do not update contributions, income or expenses. No goal API exists. |
+| `/reports` | Selected-month income, expenses and net cash flow; category spending; income/expense charts; weekly category filter; monthly history; real budget performance for the selected period. | Most calculations use saved API transactions in the browser. Filter scope differs by widget; weekly category choices remain fixed. |
+| `/tools` | Subscription Checker, Paycheck Splitter, Salary Converter, Bill Splitter, Compound Interest, Trip Budget and Wish List. | Browser-only tools; the wish list is the only tool that persists its inputs. |
+| `/ai` | Page heading and description. | No AI service or assistant is connected. |
+| `/settings` | Import CSV, Preferences, Downloadables, Rules, Categories and Clear Data tabs. | Panels are placeholders; import/export and Clear Data have no implemented backend operations. |
 
-The shared interface includes a collapsible sidebar, responsive layouts, light/dark/system themes, animated page entrances, chart tooltips, reusable form controls, confirmation dialogs, and Sonner toasts. Unknown routes display a custom 404 page with links to the home page and dashboard.
+Shared UI includes a collapsible sidebar, responsive layouts, themes, page transitions, form controls, chart tooltips, dialogs, Sonner toasts and a custom 404 page.
 
 ### Financial tools
 
@@ -36,144 +40,144 @@ The shared interface includes a collapsible sidebar, responsive layouts, light/d
 
 Tool estimates and planning amounts do not update dashboard balances, transactions, budgets, or goals.
 
+
 ## Technology
 
-Frontend versions below reflect [frontend/package.json](frontend/package.json).
+Versions reflect [frontend/package.json](frontend/package.json) and [backend/pyproject.toml](backend/pyproject.toml).
 
-| Area | Technology |
+| Area | Current technology |
 | --- | --- |
-| Framework | Next.js `16.3.5`, App Router |
-| UI | React and React DOM `19.2.8` |
-| Language | TypeScript `^5`, with strict mode enabled |
-| Styling | Tailwind CSS `^4`, PostCSS, CSS theme variables, `tw-animate-css` |
-| Components | shadcn configuration using the `aria-nova` style, React Aria Components, Radix UI |
+| Frontend | Next.js `16.3.5` App Router, React/React DOM `19.2.8`, TypeScript `^5` |
+| Styling/UI | Tailwind CSS `^4`, shadcn configuration, React Aria Components, Radix UI, Motion, next-themes, Sonner |
 | Charts | Recharts `3.8.0` |
-| Motion and themes | Motion `^13.4.0`, next-themes `^0.4.6` |
-| Toasts | Sonner `^2.0.8` |
-| Icons and dates | Lucide React, React Icons, `@internationalized/date`, date-fns |
-| Code quality | Biome `2.4.2` |
-| Package manager | pnpm `12.8.1` |
+| Frontend checks | Biome `2.4.2`, TypeScript strict mode |
+| Frontend packages | pnpm `12.8.1`; workspace includes `frontend` only |
+| Backend | Python `>=3.13`; `.python-version` selects 3.13; FastAPI `>=0.142.2` |
+| Validation | Pydantic transaction and budget schemas |
+| Database | PostgreSQL 17 in Docker |
+| ORM/driver | SQLAlchemy `>=2.1.1`, Psycopg `>=3.2,<4` with binary extra |
+| Migrations | Alembic `>=1.20.0`; current head `0002` |
+| Backend packages | uv, `pyproject.toml`, `uv.lock`, python-dotenv |
+| Tests | 28 backend regressions using unittest and FastAPI TestClient |
+| API docs | FastAPI Swagger, ReDoc and OpenAPI |
 
-React Compiler is enabled in `frontend/next.config.ts`. The root layout configures Geist, Geist Mono, DM Sans, and Nunito Sans through `next/font/google`.
+React Compiler is enabled. The root layout uses Geist, Geist Mono, DM Sans and Nunito Sans through `next/font/google`. Authentication, Pytest adoption, GitHub Actions, bank integration, Redis and workers remain future work. Only PostgreSQL is currently containerized.
 
-Backend requirements are declared in [backend/pyproject.toml](backend/pyproject.toml), with resolved dependencies in `backend/uv.lock`.
-
-| Area | Current backend setup |
-| --- | --- |
-| Python | `>=3.13`; `.python-version` selects `3.13` |
-| API | `fastapi[standard]>=0.142.2`, including the development/server tooling |
-| Validation | Pydantic transaction create/update/read schemas with dates, lowercase types, and positive Decimal amounts |
-| ORM dependency | `sqlalchemy>=2.1.1`; database and model files are still empty |
-| Migrations dependency | `alembic>=1.20.0`; migration environment initialized but not connected to model metadata or a database |
-| Package management | uv, `pyproject.toml`, `uv.lock`, and the `uv_build` build backend |
-
-## Getting started
+## Local setup
 
 ### Prerequisites
 
-- Node.js **20.9 or newer**, as required by the installed Next.js version.
-- pnpm **12.8.1**, matching the frontend's `packageManager` declaration.
-- Python **3.13** and **uv** for the backend. See the [uv project guide](https://docs.astral.sh/uv/guides/projects/) for environment and dependency management.
+- Node.js 20.9 or newer, matching the installed Next.js guide.
+- pnpm 12.8.1, matching the frontend manifest.
+- Python 3.13 and uv.
+- Docker Desktop running Linux containers, with Docker Compose available.
 
-If pnpm is not installed, install the declared version:
+For a new pnpm installation: `npm install --global pnpm@12.8.1`. On Windows, use `pnpm.cmd` if PowerShell execution policy blocks the launcher.
 
-```sh
-npm install --global pnpm@12.8.1
-```
+### 1. Configure the backend
 
-### 1. Start the backend
+From the repository root:
 
-In one terminal, starting from the repository root:
-
-```sh
+```powershell
 cd backend
 uv sync --locked
+```
+
+For a fresh checkout, create `backend/.env` with your chosen local database password in both settings:
+
+```dotenv
+POSTGRES_PASSWORD='YOUR_LOCAL_PASSWORD'
+DATABASE_URL='postgresql+psycopg://finance_user:YOUR_LOCAL_PASSWORD@127.0.0.1:5433/finance_engine'
+```
+
+Preserve existing local settings if already configured. These are placeholders, not working credentials. URL-encode reserved password characters in `DATABASE_URL`; keep the actual password in `POSTGRES_PASSWORD`. Environment files are ignored by Git.
+
+The backend and Alembic read `DATABASE_URL` from the process environment first, then `backend/.env`. A blank process-level value also takes precedence. Compose reads `POSTGRES_PASSWORD` for database initialization.
+
+### 2. Start PostgreSQL and migrate
+
+Still in `backend/`:
+
+```powershell
+docker compose config --quiet
+docker compose up -d --wait --wait-timeout 60 db
+uv run alembic upgrade head
+uv run alembic current
+uv run alembic check
+```
+
+The service is `db`, container is `finance-engine-db`, database is `finance_engine` and role is `finance_user`. Windows clients connect to **127.0.0.1:5433**, forwarding to PostgreSQL's internal port 5432. Port 5433 avoids the separate example project's database on port 5432.
+
+Data is stored in the named volume `backend_finance_engine_postgres_data`. Revision `0001` creates `budgets` and `transactions`; `0002` adds `categories` and category references. Existing budgets retain their All categories scope. No transactions are seeded. Apply these supplied migrations instead of generating another initial revision.
+
+Expected checks: `0002 (head)` and `No new upgrade operations detected.` See the [backend guide](backend/README.md) for lifecycle commands and troubleshooting.
+
+### 3. Start the API
+
+In the backend terminal:
+
+```powershell
 uv run uvicorn backend.main:app --app-dir src --reload --host 127.0.0.1 --port 8000
 ```
 
-The FastAPI application is `backend.main:app`, defined in `backend/src/backend/main.py`. Uvicorn serves that application using its module and attribute name. [FastAPI server documentation](https://fastapi.tiangolo.com/deployment/manually/)
+Keep it running. Visit [health](http://127.0.0.1:8000/health) or [Swagger](http://127.0.0.1:8000/docs). `uv run backend` only invokes the original hello-world console command.
 
-Open [API health](http://127.0.0.1:8000/health) or [Swagger UI](http://127.0.0.1:8000/docs). Health returns `{"status":"Ok"}`. No PostgreSQL instance or backend database credentials are needed for the current sample endpoints.
+`/health` checks the API process; `/budgets`, `/transactions` and `/categories` exercise database access. Financial routes require a configured, reachable, migrated database; health and docs can work without PostgreSQL.
 
-The project's `uv run backend` console command only prints `Hello from backend!`; it does **not** start the API. Use the Uvicorn command above.
+### 4. Configure and start the frontend
 
-### 2. Configure the frontend
-
-Create or update `frontend/.env.local` with the API base URL, without a trailing slash:
+Set `frontend/.env.local`:
 
 ```dotenv
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```
 
-The frontend reads this value for health and transaction requests. Put the file in `frontend/`, not the repository root or `frontend/src/`, and restart Next.js after changing it. `NEXT_PUBLIC_` values are visible to the browser; this variable contains a public API address, not a secret.
-
-The backend allows browser origins `http://localhost:3001` and `http://127.0.0.1:3001`. A different frontend hostname or port requires a corresponding CORS configuration change.
-
-### 3. Start the frontend
+Use no trailing slash. This URL is public and must not contain database credentials. Older chart/page consumers require it; the shared finance API helper also supplies a localhost fallback.
 
 In a second terminal, from the repository root:
 
-```sh
+```powershell
 pnpm install
 pnpm --dir frontend dev
 ```
 
-Open **http://localhost:3001** for the landing page, **http://localhost:3001/transactions** for transaction filtering, or **http://localhost:3001/dashboard** for the dashboard. Keep the backend running for API-dependent components. No sign-in is required.
+Open **http://localhost:3001**. Backend CORS allows `http://localhost:3001` and `http://127.0.0.1:3001`. Restart Next.js after changing its environment file and the API after changing database configuration.
 
-Dependency installation requires network access; the configured Google fonts may also require network access during compilation. Some dashboard/report components fetch at module scope, so frontend compilation or rendering can also depend on API availability.
+Keep the backend available for API-dependent components. Recent transactions now fetch after mounting with loading/error states. Google font compilation can require network access.
 
-The root `pnpm-lock.yaml` contains the frontend dependency graph and package-manager metadata, including pnpm `12.4.2` tooling. The setup version above follows the frontend manifest's `12.8.1` declaration. Review any lockfile changes produced by installation.
+## Current REST API
 
-On Windows PowerShell, use `pnpm.cmd` in place of `pnpm` if script execution policy prevents the PowerShell launcher from running.
+Routes are unversioned and unauthenticated. There are no `/api/v1` endpoints yet.
 
-## Commands
+| Method | Path | Behavior |
+| --- | --- | --- |
+| GET | `/` | API welcome message. |
+| GET | `/health` | `{"status":"Ok"}`; no PostgreSQL check. |
+| GET | `/categories` | Shared category names, sorted alphabetically. |
+| GET | `/transactions` | Saved transactions, descending date/ID; no server-side filtering or pagination. |
+| POST | `/transactions` | Saves a transaction and resolves/creates its category; returns 201. |
+| GET / PATCH / DELETE | `/transactions/{id}` | Read, partially update, or delete a saved transaction; missing ID returns 404. Delete returns 204. |
+| GET | `/budgets` | Persistent budgets with calculated totals; optional `month` and `year` filters. |
+| POST | `/budgets` | Saves a category or overall monthly budget; returns 201. Duplicate category/month/year returns 409. |
+| GET | `/budgets/{id}` | Reads a budget and expense totals; missing ID returns 404. |
+| PUT | `/budgets/{id}` | Updates supplied fields; omitted fields are preserved. `category: null` means All categories; other explicit nulls are rejected. |
+| DELETE | `/budgets/{id}` | Deletes a budget; returns 204. |
+| GET | `/docs`, `/redoc`, `/openapi.json` | Generated API documentation. |
 
-Application scripts live in `frontend/package.json`; there is no root `package.json`. Run these commands from the repository root:
+Budget request:
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm install` | Install workspace dependencies. |
-| `pnpm --dir frontend dev` | Start the development server on port `3001`. |
-| `pnpm --dir frontend build` | Create a production build. |
-| `pnpm --dir frontend start` | Serve an existing production build on port `3000` by default. |
-| `pnpm --dir frontend lint` | Run Biome checks without rewriting files. |
-| `pnpm --dir frontend format` | Format files with Biome; this command writes changes. |
-
-For a local production run on port `3001`:
-
-```sh
-pnpm --dir frontend build
-pnpm --dir frontend start -p 3001
+```json
+{
+  "category": "Groceries",
+  "month": 10,
+  "year": 2026,
+  "amount": "400.00"
+}
 ```
 
-The production server requires a successful build first. Configure `NEXT_PUBLIC_API_URL` before building. The repository does not currently include an automated test suite, a test script, a CI workflow, or container/deployment configuration.
+Budget responses contain `id`, `category`, `month`, `year`, **`budget`**, `spent`, `remaining` and `usage_percentage`. Decimal amounts serialize as strings. Budget cards and progress widgets display these backend totals.
 
-Backend commands, run from `backend/`:
-
-| Command | Purpose |
-| --- | --- |
-| `uv sync --locked` | Synchronize the Python environment using the existing manifest and lockfile. |
-| `uv run uvicorn backend.main:app --app-dir src --reload --host 127.0.0.1 --port 8000` | Run the development API on port `8000`. |
-
-Alembic is present, but migrations are not ready to apply: `target_metadata` is `None`, the connection URL is still a template value, and there are no revision files.
-
-## Current API
-
-The API currently uses unversioned paths. It does **not** expose the planned `/api/v1` routes or require authentication.
-
-| Method | Path | Current behavior |
-| --- | --- | --- |
-| GET | `/` | Returns `{"message":"Finance Engine API"}`. |
-| GET | `/health` | Returns `{"status":"Ok"}`; process response only, no database readiness check. |
-| GET | `/transactions` | Returns 30 fixed sample transactions from `backend/src/backend/transactions.py`. No pagination or server-side filtering. |
-| POST | `/transactions` | Validates `TransactionCreate`, returns a `TransactionRead` with fixed `id: 1`, and does not persist the result. Current success status is 200. |
-| GET | `/docs` | Swagger UI. |
-| GET | `/redoc` | ReDoc API reference. |
-| GET | `/openapi.json` | Generated OpenAPI schema. |
-
-There are no transaction detail, update, or delete routes. `backend/src/backend/routes/transactions.py` contains a separate two-record sample router, but `main.py` imports the router in `backend/src/backend/transactions.py`; the `routes/` copy is not registered.
-
-Example body for `POST /transactions`:
+Valid transaction request (POST saves it):
 
 ```json
 {
@@ -182,191 +186,146 @@ Example body for `POST /transactions`:
   "category": "Dining",
   "bank": "Chase",
   "type": "expense",
-  "amount": "4.50"
+  "amount": "4.50",
+  "pie-color": "var(--chart-orange-2)"
 }
 ```
 
-The schema requires a valid date, nonempty merchant/category/bank, `income` or `expense`, and a positive amount with at most two decimal places. Invalid input receives FastAPI validation errors. Posting this example does not change the subsequent GET list. `TransactionUpdate` exists as a schema but has no endpoint yet.
+The schema requires a date, nonempty text fields, lowercase `income`/`expense`, and a positive amount with at most two decimal places. `pie-color` (or `pie_color`) is optional and defaults to `var(--chart-1)`. Invalid bodies return 422. The frontend refreshes saved transactions and mounted budget views after writes.
+
+### How category budgets work
+
+1. On **Budgets**, choose **Add Budget → One category**, enter or select `Groceries`, choose October 2026, and set a limit of `$400`.
+2. On **Transactions**, save a `$125` **expense** categorized as `Groceries`, dated in October 2026.
+3. The budget shows **$125 spent, $275 remaining, 31.25% used**. Dashboard/report budget widgets show the same totals when October 2026 is selected.
+
+Only the category, transaction date, and `expense` type determine inclusion; the merchant and bank do not. Existing matching expenses count even if entered before the budget. Changing a transaction's amount/category/date/type or deleting it affects the totals on the next read. Transaction editing currently uses `PATCH /transactions/{id}` in Swagger.
+
+Category names share one database record: `Groceries`, `groceries`, and ` Groceries ` resolve to the same stored name. The first budget or transaction using a new name creates it; both forms offer these names as suggestions. Category renaming/deletion and the Settings category-management panel remain future work.
+
+You may have Groceries and Dining budgets in the same month, but only one budget per category/month/year. **All categories** (`category: null`) counts every expense in the month. The existing monthly budget was preserved this way. Overall and category budgets overlap: do not add their spent figures together. Each budget is a spending limit, not a transfer of money or an account balance.
+
+## Architecture and data
+
+```text
+Next.js :3001
+  +-- HTTP -> FastAPI :8000
+  |             +-- /transactions, /categories, /budgets
+  |                    +-- SQLAlchemy + Psycopg -> PostgreSQL :5433
+  +-- Browser calculations -> dashboard and reports
+  +-- React state -> goals and most tools
+  +-- localStorage -> wish list and theme preferences
+```
+
+| Feature | Source and scope |
+| --- | --- |
+| Transactions/recent transactions | PostgreSQL records; integer IDs, Decimal amounts serialized as strings. |
+| Dashboard metrics | Browser calculations. Selected-month net income is labeled savings; cumulative transaction balance is not an account balance. |
+| Category pie chart | Saved expenses filtered by selected month/year; colors use `pie-color`. |
+| Area/bar income-expense charts | Twelve months of the current calendar year, independent of the page's selected year. |
+| Weekly report | Category and selected month/year filters; four buckets: days 1-7, 8-14, 15-21 and 22 through month-end. |
+| Monthly history/category breakdown | Up to six populated months for history; all fetched expenses for category breakdown. Neither follows page filters. |
+| Budget API | PostgreSQL budgets/categories/transactions; sums only expenses in the budget's category and month, or all categories for an overall budget. Remaining may be negative. |
+| Budget cards | Backend `budget`, `spent`, `remaining`, and `usage_percentage`; no independent financial recalculation. |
+| Budget progress/performance | `/budgets?month=...&year=...`, follows the dashboard/report selected period. |
+| Goals/tools | Browser state with no user account or backend synchronization. |
+
+Both JSON fixtures in `frontend/src/data/` remain unused by current charts. The old `backend/src/backend/transactions.py` sample router remains on disk but is no longer registered or used by FastAPI. Sample records are not inserted into PostgreSQL.
+
+## Known integration gaps
+
+- **Editing:** add frontend budget/transaction edit forms for the existing update endpoints.
+- **Fetching:** consolidate remaining repeated chart/page requests; the shared list hook already refreshes budgets, category choices, transaction tables and recent transactions on writes/window focus.
+- **Analytics:** centralize financial calculations and make filter scope consistent.
+- **Goals/tools:** implement goal entries, persistence and synchronization.
+- **Features:** accounts, category rename/delete management, persistent subscriptions, CSV import and settings management remain incomplete.
+- **Security/delivery:** users, authentication, ownership checks, frontend tests, GitHub Actions and production API/frontend images are not implemented.
+
+`frontend/src/types/api.ts` defines shared Budget, Category and Transaction response types for the connected forms/cards. Some older analytics components still define local types. API validation, foreign keys and budget uniqueness constraints exist, but this remains a development application without user isolation.
 
 ## Repository structure
 
 ```text
 kingdevs-finance-engine/
-|-- backend/
-|   |-- .python-version           # Python 3.13
-|   |-- pyproject.toml            # Python dependencies and package configuration
-|   |-- uv.lock                   # Resolved Python dependencies
-|   |-- alembic.ini               # Migration configuration template
-|   |-- migrations/
-|   |   |-- env.py                # target_metadata is not configured yet
-|   |   |-- script.py.mako
-|   |   `-- README
-|   |-- README.md                 # Currently empty
-|   `-- src/backend/
-|       |-- __init__.py           # Placeholder console command
-|       |-- main.py               # FastAPI app, CORS, health, sample create route
-|       |-- transactions.py       # Registered 30-record sample GET router
-|       |-- routes/transactions.py # Separate, unregistered sample router
-|       |-- schemas/transaction.py # Pydantic request/response schemas
-|       |-- models/transaction.py # Empty model placeholder
-|       `-- database/database.py  # Empty database placeholder
-|-- frontend/
-|   |-- src/
-|   |   |-- app/
-|   |   |   |-- layout.tsx         # Fonts, theme provider, sidebar, page shell
-|   |   |   |-- page.tsx           # Landing page, navigation, backend status
-|   |   |   |-- not-found.tsx      # Custom 404 page
-|   |   |   |-- globals.css        # Tailwind imports and theme/chart tokens
-|   |   |   |-- dashboard/
-|   |   |   |-- transactions/
-|   |   |   |-- budgets/
-|   |   |   |-- goals/
-|   |   |   |-- reports/
-|   |   |   |-- tools/
-|   |   |   |-- ai/
-|   |   |   `-- settings/          # Each route directory contains page.tsx
-|   |   |-- components/
-|   |   |   |-- budgets/           # Budget cards
-|   |   |   |-- charts/            # Spending, cash flow, and budget charts
-|   |   |   |-- dashboard/         # Metrics and recent transactions
-|   |   |   |-- goal/              # Goal cards and entry fields
-|   |   |   |-- reports/           # Monthly and category summaries
-|   |   |   |-- settings/          # Settings tabs
-|   |   |   |-- tools/             # Calculators, subscriptions, trip planner, wish list
-|   |   |   |-- transactions/      # Transaction table
-|   |   |   |-- ui/                # Shared UI primitives
-|   |   |   |-- header.tsx         # Collapsible sidebar navigation
-|   |   |   |-- backend-test.tsx   # Health indicator, not an automated test
-|   |   |   |-- pageTransitions.tsx
-|   |   |   `-- theme-provider.tsx
-|   |   |-- data/                  # Two bundled chart JSON fixtures
-|   |   |-- lib/utils.ts           # Shared class-name utility
-|   |   `-- types/api.ts           # Empty placeholder for future API types
-|   |-- biome.json
-|   |-- components.json           # shadcn configuration
-|   |-- next.config.ts
-|   |-- package.json
-|   |-- postcss.config.mjs
-|   `-- tsconfig.json
-|-- AGENTS.md                      # Repository instructions for coding agents
-|-- CLAUDE.md                      # Reference to agent instructions
-|-- pnpm-workspace.yaml            # Workspace includes frontend only
+|-- README.md
+|-- AGENTS.md
+|-- pnpm-workspace.yaml           # frontend workspace only
 |-- pnpm-lock.yaml
-`-- README.md
+|-- frontend/
+|   |-- package.json
+|   |-- next.config.ts            # React Compiler enabled
+|   |-- biome.json
+|   |-- tsconfig.json             # strict; @/* -> src/*
+|   +-- src/
+|       |-- app/                  # pages, layout, styles, 404
+|       |-- components/           # features and shared UI
+|       |-- data/                 # retained unused chart fixtures
+|       |-- lib/                  # finance API helper and refreshable list hook
+|       +-- types/api.ts          # Budget, Category and Transaction responses
++-- backend/
+    |-- README.md                 # setup and API guide
+    |-- docker-compose.yml        # PostgreSQL only
+    |-- pyproject.toml
+    |-- uv.lock
+    |-- alembic.ini
+    |-- migrations/
+    |   |-- README                # migration workflow
+    |   |-- env.py
+    |   |-- script.py.mako
+    |   +-- versions/             # 0001 foundation; 0002 category budgets
+    |-- tests/test_backend.py
+    +-- src/backend/
+        |-- main.py
+        |-- transactions.py       # retained sample router; unused
+        |-- database/             # Base, URL loading, sessions
+        |-- models/               # Budget, Category and Transaction
+        |-- schemas/              # Pydantic requests/responses
+        |-- services/             # shared category resolution
+        +-- routes/               # budgets, categories and persisted transactions
 ```
 
-## Architecture and data
+There is no root `package.json`. Python package management is separate from pnpm. The root App Router layout provides fonts, theme, sidebar and toasts. Shared UI primitives live in `frontend/src/components/ui`.
 
-The App Router defines pages in `frontend/src/app`. The root layout wraps every page with the theme provider and sidebar. Feature components live under `src/components`, and reusable UI primitives live under `src/components/ui`. The `@/*` import alias resolves to `frontend/src/*`.
+## Development commands and verification
 
-This is a mixed frontend/backend prototype. FastAPI supplies sample transactions, while chart JSON, hardcoded metrics, and browser state still supply other features. There are no Next.js API route handlers or server actions; frontend fetch calls target the separate FastAPI server through `NEXT_PUBLIC_API_URL`.
+From the repository root:
 
-```text
-Next.js frontend (port 3001)
-  |-- HTTP /health and /transactions -> FastAPI (port 8000)
-  |                                      `-- Fixed Python sample records
-  |-- JSON fixtures / constants -> Charts and summary cards
-  |-- React state -> Goals, subscriptions, calculators, trip planner
-  `-- localStorage -> Wish list and theme
+| Command | Purpose |
+| --- | --- |
+| `pnpm --dir frontend dev` | Next.js development on port 3001. |
+| `pnpm --dir frontend lint` | Read-only Biome checks. |
+| `pnpm --dir frontend exec tsc --noEmit --incremental false` | Typecheck without writing incremental metadata. |
+| `pnpm --dir frontend build` | Production build; configure the API URL first. |
+| `pnpm --dir frontend start -p 3001` | Serve an existing build on the CORS-compatible port. Without `-p`, Next defaults to 3000. |
+| `pnpm --dir frontend format` | Format source files; writes changes. |
 
-PostgreSQL is not connected.
-```
+From `backend/`:
 
-| Data source | Shape | Used for |
-| --- | --- | --- |
-| [Transaction API sample data](backend/src/backend/transactions.py) | `id`, `date`, `merchant`, `category`, `bank`, `type`, `amount` | Transaction table, recent transactions, monthly history, and category breakdown fetch this endpoint. |
-| [incomeExpenseChartData.json](frontend/src/data/incomeExpenseChartData.json) | `date`, `income`, `expenses` | Shared area and bar charts showing sample monthly totals. |
-| [spendingChartData.json](frontend/src/data/spendingChartData.json) | `category`, `amount`, `fill` | Spending doughnut chart, total spending, and category colors. |
-| Constants inside pages/components | Dashboard/report metrics, budgets, and weekly spending | Placeholder cards and comparison charts. |
-| `app/goals/page.tsx` | Local goal array and creation form | Goal creation/deletion; cards derive progress and remaining amount from goal fields. |
-| `tools/subscriptions.tsx` | Initial subscription array and local form/list state | Subscription tracking and estimated recurring costs. |
-| `tools/trip-budget.tsx` | Sample expense options, checklist, and editable local state | Trip planning and cost comparisons. |
-| `tools/wish-list.tsx` | Items and budget stored in localStorage | Wish-list editing, scoring, deadlines, and budget planning. |
-| Calculator component state | User-entered amounts, rates, percentages, and periods | Paycheck, salary, bill, and compound-interest calculations. |
+| Command | Purpose |
+| --- | --- |
+| `uv sync --locked` | Install locked Python dependencies. |
+| `docker compose ps` | Inspect this project's database service. |
+| `docker compose logs --tail 50 db` | Read database logs. |
+| `docker compose stop db` | Stop PostgreSQL while retaining data. |
+| `uv run alembic current` | Show database revision. |
+| `uv run alembic check` | Compare database schema with model metadata. |
+| `uv run python -B -m unittest discover -s tests -v` | Run the 28 backend regressions. |
 
-The GET transaction samples use integer IDs, ISO `YYYY-MM-DD` dates, lowercase `income`/`expense` types, and positive numeric amounts. The create/read Pydantic schemas use Decimal amounts; the POST response serializes the amount as a string. The frontend table currently declares a string ID and numeric amount, so the shared request/response contract still needs alignment. Currency displays use US dollar formatting.
+The suite covers imports/configuration, persistent transaction CRUD, category reuse, category/month/type isolation, budget CRUD/conflicts, validation, leap days, migration preservation and guarded rollback. It uses isolated SQLite memory and renders PostgreSQL migration SQL. All 28 tests passed during category integration; live PostgreSQL checks also passed and their rows were rolled back. Migration `0002` was applied, the existing budget was preserved, and `alembic check` reported no pending changes. TestClient emits an httpx deprecation warning; SQLite expression-index reflection also warns, so PostgreSQL schema parity was checked separately.
 
-Recent transactions are sorted by date and limited to five entries. Monthly history and category breakdown compute their aggregates in the frontend. Both still check `type === "Income"`, although the API returns lowercase `income`; their current calculations therefore misclassify income and should not be treated as accurate financial reports.
+The frontend typecheck currently reports eight pre-existing errors in Compound Interest, Paycheck Splitter, Salary Converter and Trip Budget UI props; no category-integration file reports a type error. No full browser end-to-end run is claimed. No frontend automated suite or GitHub Actions workflow is present. `backend-test.tsx` is a UI health indicator.
 
-The previous `frontend/src/data/transactionData.json` file is no longer present. The two remaining chart fixtures and hardcoded summary values are independent of the API transaction samples, so figures across cards, charts, and tables are not expected to reconcile.
+The root lockfile contains frontend dependencies and separate package-manager metadata; use the manifest's pnpm version and review installation changes. Before editing Next.js code, follow [AGENTS.md](AGENTS.md) and the bundled guides in `frontend/node_modules/next/dist/docs/`.
 
-### Browser persistence
+## Next development steps
 
-The wish list uses the localStorage keys `what-to-buy-items` and `what-to-buy-budget`. These values belong to the browser profile and site origin, not an authenticated account. They do not sync across devices and can be lost if site data is cleared. A different port or hostname has separate browser storage.
+1. Fix the existing tool-component type errors and establish frontend checks.
+2. Add edit forms, transaction pagination and category management; consolidate analytics fetching.
+3. Introduce users, JWT/refresh sessions and owner-scoped authorization.
+4. Add accounts, goals/contributions, subscriptions and settings persistence.
+5. Centralize dashboard/reports and build CSV import.
+6. Expand financial/security coverage, adopt Pytest if desired, add frontend tests and GitHub Actions.
+7. Package API/frontend deployment and document backup/recovery.
+8. Add Redis, RQ/Celery, OAuth expansion or bank synchronization when required.
 
-Theme selection is also persisted locally by next-themes. Goals, subscription changes, trip plans, and calculator inputs are not saved across reloads. Uploading a subscription icon reads the image into local component state; it does not upload a file to a server.
-
-## Known integration gaps
-
-- **Transaction writes:** POST echoes a validated object with a fixed ID. The frontend delete handler calls an endpoint that does not exist. Add Transaction is not connected to a form or API call.
-- **Fetching:** The transaction table has two equivalent mount effects, causing duplicate GET requests. Recent transactions, monthly history, and category breakdown fetch at module scope and have no coordinated refresh after mutations.
-- **Reports:** Uppercase income comparisons conflict with the API's lowercase values. Major totals remain split between API samples, JSON fixtures, and constants.
-- **Goals:** Create/delete work only in component state. Add Entry has no submission handler, so contribution/income/expense fields remain at their initial values.
-- **Database and migrations:** SQLAlchemy and Alembic are installed dependencies, but engine/session/model files and migration metadata are not implemented. No PostgreSQL driver is declared in the backend manifest.
-- **Authentication and delivery:** No user ownership, JWT/OAuth, automated test suite, Docker setup, or GitHub Actions workflow exists yet. The API is a local development prototype.
-
-## Configuration and development
-
-- **Routing and layout:** `frontend/src/app` contains route pages, the shared layout, and the 404 page.
-- **Theme and styling:** `frontend/src/app/globals.css` defines light/dark colors, chart palettes, metric colors, and Tailwind theme mappings. Theme selection is handled by next-themes.
-- **UI configuration:** `frontend/components.json` defines shadcn aliases, the `aria-nova` style, the `mist` base color, and Lucide icons.
-- **TypeScript:** `frontend/tsconfig.json` enables strict checking and the `@/*` source alias.
-- **API configuration:** Set `NEXT_PUBLIC_API_URL` in `frontend/.env.local`; the current backend does not consume database environment settings.
-- **Backend entry point:** `backend/src/backend/main.py` defines the FastAPI application; `backend/src/backend/__init__.py` only defines the placeholder console command.
-- **Validation and migrations:** Transaction schemas are in `backend/src/backend/schemas/transaction.py`; Alembic configuration is present but unfinished.
-- **Formatting and linting:** `frontend/biome.json` uses two-space indentation, recommended checks, and React/Next.js rules.
-- **Workspace:** `pnpm-workspace.yaml` includes only `frontend` and disables dependency build scripts for `sharp` and `unrs-resolver`.
-- **Generated files:** Dependency directories, `.next`, build output, environment files, and TypeScript build metadata are ignored by Git.
-
-For code changes, use `pnpm --dir frontend lint` to check code style and `pnpm --dir frontend build` to check production compilation.
-
-No automated backend tests are defined yet. `frontend/src/components/backend-test.tsx` is a UI health indicator, not a test suite. The current API can be inspected manually through `/docs`; a successful `/health` response does not validate persistence or financial calculations.
-
-Coding agents should read [AGENTS.md](AGENTS.md) and the relevant guides bundled with the installed Next.js package under `frontend/node_modules/next/dist/docs/` before changing application code.
-
-## Backend roadmap
-
-Backend development has started: the Python package, uv lockfile, FastAPI application, Pydantic transaction schemas, sample endpoints, and Alembic skeleton now exist. The next steps are to connect PostgreSQL, implement SQLAlchemy models/sessions, configure migration metadata, and replace the fixed transaction responses with persistent operations. `frontend/src/types/api.ts` remains an empty placeholder, not a generated API contract.
-
-The intended architecture is:
-
-```text
-Next.js / React frontend
-          |
-       HTTPS / REST
-          |
-    FastAPI backend
-          |
-    SQLAlchemy services
-          |
-      PostgreSQL
-```
-
-| Area | Technology | Current status |
-| --- | --- | --- |
-| Backend | Python + FastAPI | Implemented as an initial sample API |
-| Database | PostgreSQL | Planned; not connected |
-| ORM | SQLAlchemy 2.x | Dependency present; models and sessions pending |
-| Validation | Pydantic | Transaction schemas implemented |
-| Authentication | JWT access tokens, refresh sessions, OAuth support | Planned |
-| Migrations | Alembic | Skeleton initialized; metadata, connection, and revisions pending |
-| API documentation | FastAPI OpenAPI / Swagger | Available for the current routes |
-| Testing | Pytest | Planned; no project test suite |
-| Containers | Docker / Docker Compose | Planned |
-| CI/CD | GitHub Actions | Planned |
-| Later caching | Redis | Deferred until needed |
-| Later background jobs | RQ or Celery | Deferred until durable jobs are needed |
-
-Remaining implementation sequence:
-
-1. Complete backend configuration, PostgreSQL connectivity, SQLAlchemy sessions/models, Alembic metadata, database readiness checks, and initial tests.
-2. Users, secure authentication, sessions, and owner-scoped authorization.
-3. Persistent accounts, categories, and transaction CRUD; align frontend types, pagination, and mutation behavior with the API.
-4. Persistent budgets, goals, contributions, subscriptions, and preferences; connect the existing UI forms.
-5. Shared backend calculations for dashboard and reports.
-6. CSV preview, validation, duplicate review, import history, and atomic import.
-7. Expanded financial, API, database, and security tests.
-8. Container packaging, CI/CD, production configuration, and recovery procedures.
-9. Optional caching, workers, bank synchronization, OAuth expansion, notifications, and saved-tool synchronization.
-
-Tests, migrations, and authorization should accompany each feature as it is introduced. Redis, background workers, and PostgreSQL are not required to run the current fixed-data API; PostgreSQL becomes necessary when persistent finance operations are implemented.
+Tests and migrations should accompany backend changes. PostgreSQL is required for transactions, categories and budgets; Redis and workers remain deferred.

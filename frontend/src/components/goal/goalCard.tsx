@@ -128,6 +128,7 @@ const GoalCard = ({ goal, onDelete }: GoalCardProps) => {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
+                <AlertDialogCancel>Never Mind</AlertDialogCancel>
                 <AlertDialogAction
                   variant="destructive"
                   onClick={() => {

@@ -2,8 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Calls routs
-from .transactions import router as transactions_router
-from backend.schemas.transaction import (TransactionCreate, TransactionRead,)
+from .routes.transactions import router as transactions_router
+from .routes.categories import router as categories_router
+from .routes.budgets import router as budgets_router
 
 app = FastAPI(
     title="KingDev's Finance Engine API",
@@ -23,6 +24,8 @@ app.add_middleware(
 )
 
 app.include_router(transactions_router)
+app.include_router(budgets_router)
+app.include_router(categories_router)
 
 @app.get("/")
 def root():
@@ -31,15 +34,3 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status":"Ok"}
-
-@app.post(
-    "/transactions",
-    response_model=TransactionRead,
-)
-def create_transaction(
-    transaction: TransactionCreate,
-):
-    return {
-        "id": 1,
-        **transaction.model_dump(),
-    }

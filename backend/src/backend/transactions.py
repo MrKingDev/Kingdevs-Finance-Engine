@@ -16,6 +16,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 54.23,
+            "pie-color": "var(--chart-emerald-2)"
         },
         {
             "id": 2,
@@ -25,6 +26,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "income",
             "amount": 2400.00,
+            "pie-color": "var(--chart-green-2)"
         },
         {
             "id": 3,
@@ -34,6 +36,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 8.47,
+            "pie-color": "var(--chart-orange-2)"
         },
         {
             "id": 4,
@@ -43,6 +46,7 @@ def get_transactions():
             "bank": "Bank of America",
             "type": "expense",
             "amount": 46.18,
+            "pie-color": "var(--chart-amber-2)"
         },
         {
             "id": 5,
@@ -52,6 +56,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 17.99,
+            "pie-color": "var(--chart-violet-2)"
         },
         {
             "id": 6,
@@ -61,6 +66,7 @@ def get_transactions():
             "bank": "Capital One",
             "type": "expense",
             "amount": 82.64,
+            "pie-color": "var(--chart-fuchsia-2)"
         },
         {
             "id": 7,
@@ -70,6 +76,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "income",
             "amount": 650.00,
+            "pie-color": "var(--chart-cyan-2)"
         },
         {
             "id": 8,
@@ -79,6 +86,7 @@ def get_transactions():
             "bank": "Capital One",
             "type": "expense",
             "amount": 15.72,
+            "pie-color": "var(--chart-orange-2)"
         },
         {
             "id": 9,
@@ -88,6 +96,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 118.45,
+            "pie-color": "var(--chart-yellow-2)"
         },
         {
             "id": 10,
@@ -97,6 +106,7 @@ def get_transactions():
             "bank": "Bank of America",
             "type": "expense",
             "amount": 63.91,
+            "pie-color": "var(--chart-fuchsia-2)"
         },
         {
             "id": 11,
@@ -106,6 +116,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 11.99,
+            "pie-color": "var(--chart-violet-2)"
         },
         {
             "id": 12,
@@ -115,6 +126,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 91.37,
+            "pie-color": "var(--chart-emerald-2)"
         },
         {
             "id": 13,
@@ -124,6 +136,7 @@ def get_transactions():
             "bank": "Capital One",
             "type": "expense",
             "amount": 24.56,
+            "pie-color": "var(--chart-blue-2)"
         },
         {
             "id": 14,
@@ -133,6 +146,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 32.50,
+            "pie-color": "var(--chart-purple-2)"
         },
         {
             "id": 15,
@@ -142,6 +156,7 @@ def get_transactions():
             "bank": "Bank of America",
             "type": "expense",
             "amount": 21.84,
+            "pie-color": "var(--chart-rose-2)"
         },
         {
             "id": 16,
@@ -151,6 +166,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "income",
             "amount": 2400.00,
+            "pie-color": "var(--chart-green-2)"
         },
         {
             "id": 17,
@@ -160,6 +176,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 84.99,
+            "pie-color": "var(--chart-sky-2)"
         },
         {
             "id": 18,
@@ -169,6 +186,7 @@ def get_transactions():
             "bank": "Capital One",
             "type": "expense",
             "amount": 24.99,
+            "pie-color": "var(--chart-lime-2)"
         },
         {
             "id": 19,
@@ -178,6 +196,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 76.42,
+            "pie-color": "var(--chart-emerald-2)"
         },
         {
             "id": 20,
@@ -187,6 +206,7 @@ def get_transactions():
             "bank": "Capital One",
             "type": "expense",
             "amount": 38.73,
+            "pie-color": "var(--chart-orange-2)"
         },
         {
             "id": 21,
@@ -196,6 +216,7 @@ def get_transactions():
             "bank": "Bank of America",
             "type": "income",
             "amount": 145.50,
+            "pie-color": "var(--chart-teal-2)"
         },
         {
             "id": 22,
@@ -205,6 +226,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 9.99,
+            "pie-color": "var(--chart-violet-2)"
         },
         {
             "id": 23,
@@ -214,6 +236,7 @@ def get_transactions():
             "bank": "Bank of America",
             "type": "expense",
             "amount": 51.26,
+            "pie-color": "var(--chart-amber-2)"
         },
         {
             "id": 24,
@@ -223,6 +246,7 @@ def get_transactions():
             "bank": "Capital One",
             "type": "expense",
             "amount": 129.99,
+            "pie-color": "var(--chart-indigo-2)"
         },
         {
             "id": 25,
@@ -232,6 +256,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 13.64,
+            "pie-color": "var(--chart-orange-2)"
         },
         {
             "id": 26,
@@ -241,6 +266,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 1250.00,
+            "pie-color": "var(--chart-red-2)"
         },
         {
             "id": 27,
@@ -250,6 +276,7 @@ def get_transactions():
             "bank": "Bank of America",
             "type": "income",
             "amount": 18.42,
+            "pie-color": "var(--chart-cyan-3)"
         },
         {
             "id": 28,
@@ -259,6 +286,7 @@ def get_transactions():
             "bank": "Capital One",
             "type": "expense",
             "amount": 67.18,
+            "pie-color": "var(--chart-emerald-2)"
         },
         {
             "id": 29,
@@ -268,6 +296,7 @@ def get_transactions():
             "bank": "Chase",
             "type": "expense",
             "amount": 39.99,
+            "pie-color": "var(--chart-purple-2)"
         },
         {
             "id": 30,
@@ -277,5 +306,6 @@ def get_transactions():
             "bank": "Chase",
             "type": "income",
             "amount": 425.00,
+            "pie-color": "var(--chart-cyan-2)"
         },
     ]

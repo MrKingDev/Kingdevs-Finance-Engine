@@ -2,68 +2,73 @@
 
 import { AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useFinanceList } from "@/lib/use-finance-list";
+import type { Budget } from "@/types/api";
 
-const budgetData = [
-  {
-    category: "Food",
-    spent: 320,
-    budget: 400,
-  },
-  {
-    category: "Shopping",
-    spent: 180,
-    budget: 200,
-  },
-  {
-    category: "Transport",
-    spent: 110,
-    budget: 250,
-  },
-  {
-    category: "Entertainment",
-    spent: 240,
-    budget: 150,
-  },
-];
+const currency = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 
-export default function BudgetCategoryChart() {
+export default function BudgetCategoryChart({
+  month,
+  year,
+}: {
+  month: number;
+  year: number;
+}) {
+  const {
+    data: budgets,
+    loading,
+    error,
+  } = useFinanceList<Budget>(`/budgets?month=${month}&year=${year}`);
+  if (loading)
+    return <p className="text-sm text-muted-foreground">Loading budgets...</p>;
+  if (error)
+    return (
+      <p role="alert" className="text-sm text-destructive">
+        {error}
+      </p>
+    );
+  if (!budgets.length)
+    return (
+      <p className="text-sm text-muted-foreground">
+        No budgets for this month. Create one on the Budgets page.
+      </p>
+    );
+
   return (
     <div className="space-y-6">
-      {budgetData.map((item) => {
-        const percentage = (item.spent / item.budget) * 100;
-        const isOverBudget = item.spent > item.budget;
-
+      {budgets.map((budget) => {
+        const remaining = Number(budget.remaining);
+        const label = budget.category ?? "All categories";
         return (
-          <div key={item.category} className="space-y-2">
-            {/* Top row */}
+          <div key={budget.id} className="space-y-2">
             <div className="flex items-center justify-between gap-4">
-              <p className="font-medium">{item.category}</p>
-
+              <p className="font-medium">{label}</p>
               <div className="flex items-center gap-2">
                 <p className="text-sm text-muted-foreground">
-                  ${item.spent.toFixed(0)} / ${item.budget.toFixed(0)}
+                  {currency.format(Number(budget.spent))} /{" "}
+                  {currency.format(Number(budget.budget))}
                 </p>
-
-                {isOverBudget && (
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                {remaining < 0 && (
+                  <AlertTriangle
+                    className="size-4 text-destructive"
+                    aria-label="Over budget"
+                  />
                 )}
               </div>
             </div>
-
-            {/* Progress bar */}
             <Progress
-              value={Math.min(percentage, 100)}
-              aria-label={`${item.category} budget usage`}
+              value={Math.min(Math.max(budget.usage_percentage, 0), 100)}
+              aria-label={`${label} budget usage`}
               className="h-2"
             />
-
-            {/* Percentage */}
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{percentage.toFixed(0)}% used</span>
-
-              {isOverBudget && (
+              <span>{budget.usage_percentage.toFixed(1)}% used</span>
+              {remaining < 0 && (
                 <span className="font-medium text-destructive">
-                  ${(item.spent - item.budget).toFixed(0)} over budget
+                  {currency.format(-remaining)} over budget
                 </span>
               )}
             </div>

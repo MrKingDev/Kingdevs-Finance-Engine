@@ -1,4 +1,9 @@
-import { useEffect, useState } from "react";
+"use client";
+
+import { useState } from "react";
+import { API_URL, notifyFinanceChanged } from "@/lib/finance-api";
+import { useFinanceList } from "@/lib/use-finance-list";
+import type { Transaction } from "@/types/api";
 
 import {
   Table,
@@ -9,26 +14,28 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
 import { Trash2 } from "lucide-react";
 
 // Types
 
-interface Transaction {
-  id: string;
-  date: string;
-  merchant: string;
-  category: string;
-  bank: string;
-  type: "income" | "expense";
-  amount: number;
-}
-
 interface TransactionsTableProps {
   search: string;
   type: string;
-  category: string;
+  category: string | null;
   bank: string;
   startDate: string;
   endDate: string;
@@ -38,6 +45,7 @@ interface TransactionsTableProps {
 }
 
 // Format YYYY-MM-DD -> MM/DD/YYYY
+
 const formatDate = (date: string) => {
   const [year, month, day] = date.split("-");
 
@@ -45,6 +53,7 @@ const formatDate = (date: string) => {
 };
 
 // Transaction Component
+
 const TransactionsTable = ({
   search,
   type,
@@ -56,61 +65,75 @@ const TransactionsTable = ({
   maxAmount,
   onClearFilters,
 }: TransactionsTableProps) => {
-  // State FIRST
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // State
+
+  const {
+    data: transactions,
+    loading,
+    error,
+  } = useFinanceList<Transaction>("/transactions");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  // Currency formatter
 
   const currencyFormatter = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   });
 
-  // Fetch transactions
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Delete transaction
 
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/transactions`,
+  const handleDeleteTransaction = async (id: number) => {
+    try {
+      setDeletingId(id);
+      setActionError(null);
+
+      const response = await fetch(`${API_URL}/transactions/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        console.error("Delete failed:", {
+          id,
+          url: `${API_URL}/transactions/${id}`,
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+
+        throw new Error(
+          `Failed to delete transaction: ${response.status} ${response.statusText}`,
         );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch transactions");
-        }
-
-        const data: Transaction[] = await response.json();
-
-        setTransactions(data);
-      } catch (error) {
-        console.error(error);
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Something went wrong while fetching transactions.",
-        );
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchTransactions();
-  }, []);
+      // Reload the transaction list and any mounted budget views.
 
-  // Filter AFTER transactions has been declared
+      notifyFinanceChanged();
+    } catch (error) {
+      console.error("Delete transaction error:", error);
+      setActionError("Unable to delete transaction. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // Filter transactions
+
   const filteredTransactions = transactions.filter((transaction) => {
+    const searchValue = search.toLowerCase();
+
     const matchesSearch =
-      transaction.merchant.toLowerCase().includes(search.toLowerCase()) ||
-      transaction.category.toLowerCase().includes(search.toLowerCase()) ||
-      transaction.bank.toLowerCase().includes(search.toLowerCase());
+      transaction.merchant.toLowerCase().includes(searchValue) ||
+      transaction.category.toLowerCase().includes(searchValue) ||
+      transaction.bank.toLowerCase().includes(searchValue);
 
     const matchesType = type === "all" || transaction.type === type;
 
     const matchesCategory =
-      category === "all" || transaction.category === category;
+      category === null || transaction.category === category;
 
     const matchesBank = bank === "all" || transaction.bank === bank;
 
@@ -119,10 +142,10 @@ const TransactionsTable = ({
     const matchesEndDate = endDate === "" || transaction.date <= endDate;
 
     const matchesMinAmount =
-      minAmount === "" || transaction.amount >= Number(minAmount);
+      minAmount === "" || Number(transaction.amount) >= Number(minAmount);
 
     const matchesMaxAmount =
-      maxAmount === "" || transaction.amount <= Number(maxAmount);
+      maxAmount === "" || Number(transaction.amount) <= Number(maxAmount);
 
     return (
       matchesSearch &&
@@ -135,64 +158,6 @@ const TransactionsTable = ({
       matchesMaxAmount
     );
   });
-
-  // Fetching data from API
-
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/transactions`,
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch transactions");
-        }
-
-        const data: Transaction[] = await response.json();
-
-        setTransactions(data);
-      } catch (error) {
-        console.error(error);
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Something went wrong while fetching transactions.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTransactions();
-  }, []);
-
-  // Deleting Transaction
-
-  const handleDeleteTransaction = async (id: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/transactions/${id}`,
-        {
-          method: "DELETE",
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete transaction");
-      }
-
-      setTransactions((currentTransactions) =>
-        currentTransactions.filter((transaction) => transaction.id !== id),
-      );
-    } catch (error) {
-      console.error("Delete transaction error:", error);
-    }
-  };
 
   // Loading Page
 
@@ -216,6 +181,11 @@ const TransactionsTable = ({
 
   return (
     <div className="w-full min-w-0">
+      {actionError && (
+        <p role="alert" className="text-sm text-destructive">
+          {actionError}
+        </p>
+      )}
       {/* Table Top Bar */}
 
       <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -278,7 +248,7 @@ const TransactionsTable = ({
 
           <TableBody renderEmptyState={() => "No transactions found."}>
             {filteredTransactions.map((transaction) => (
-              <TableRow key={transaction.id} id={transaction.id}>
+              <TableRow key={transaction.id} id={String(transaction.id)}>
                 {/* Date */}
 
                 <TableCell className="whitespace-nowrap">
@@ -319,21 +289,46 @@ const TransactionsTable = ({
                   }`}
                 >
                   {transaction.type === "income" ? "+" : "-"}
-                  {currencyFormatter.format(transaction.amount)}
+
+                  {currencyFormatter.format(Number(transaction.amount))}
                 </TableCell>
 
                 {/* Actions */}
 
                 <TableCell className="w-14">
                   <div className="flex justify-end">
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      aria-label={`Delete ${transaction.merchant} transaction`}
-                      onClick={() => handleDeleteTransaction(transaction.id)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    <AlertDialogTrigger>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        aria-label={`Delete ${transaction.merchant} transaction`}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Are you absolutely sure?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently
+                            delete this transaction.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Never Mind</AlertDialogCancel>
+                          <AlertDialogAction
+                            variant="destructive"
+                            isDisabled={deletingId === transaction.id}
+                            onClick={() => {
+                              handleDeleteTransaction(transaction.id);
+                            }}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialog>
+                    </AlertDialogTrigger>
                   </div>
                 </TableCell>
               </TableRow>

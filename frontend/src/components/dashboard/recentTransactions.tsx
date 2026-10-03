@@ -1,57 +1,51 @@
-// API
-const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions`);
+"use client";
 
-if (!response.ok) {
-  throw new Error("Failed to fetch transactions");
-}
-
-const transactions = await response.json();
-
-// Imports
 import { Separator } from "@/components/ui/separator";
+import { useFinanceList } from "@/lib/use-finance-list";
+import type { Transaction } from "@/types/api";
 
-const RecentTransactions = () => {
-  const recentTransactions = [...transactions]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+export default function RecentTransactions() {
+  const {
+    data: transactions,
+    loading,
+    error,
+  } = useFinanceList<Transaction>("/transactions");
+  if (loading)
+    return (
+      <p className="text-sm text-muted-foreground">Loading transactions...</p>
+    );
+  if (error)
+    return (
+      <p role="alert" className="text-sm text-destructive">
+        {error}
+      </p>
+    );
+  if (!transactions.length)
+    return (
+      <p className="text-sm text-muted-foreground">No transactions yet.</p>
+    );
+
   return (
     <>
-      {recentTransactions.map((transaction, index) => {
-        const isIncome = transaction.type === "income";
-        return (
-          <div key={transaction.id}>
-            <div className="flex items-center gap-4 py-4">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{transaction.merchant}</p>
-
-                <p className="truncate text-sm text-muted-foreground">
-                  {transaction.category}
-                  <span className="mx-1">•</span>
-
-                  {transaction.bank}
-                  <span className="mx-1">•</span>
-
-                  {transaction.date}
-                </p>
-              </div>
-
-              <p
-                className={`shrink-0 font-semibold ${
-                  isIncome
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-foreground"
-                }`}
-              >
-                {isIncome ? "+" : "-"}${transaction.amount.toFixed(2)}
+      {transactions.slice(0, 5).map((transaction, index) => (
+        <div key={transaction.id}>
+          <div className="flex items-center gap-4 py-4">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">{transaction.merchant}</p>
+              <p className="text-muted-foreground">
+                {transaction.category} · {transaction.bank} · {transaction.date}
               </p>
             </div>
-
-            {index !== recentTransactions.length - 1 && <Separator />}
+            <p
+              className={`shrink-0 font-semibold ${transaction.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"}`}
+            >
+              {transaction.type === "income" ? "+" : "-"}$
+              {Number(transaction.amount).toFixed(2)}
+            </p>
           </div>
-        );
-      })}
+          {index < Math.min(transactions.length, 5) - 1 && <Separator />}
+        </div>
+      ))}
     </>
   );
-};
-
-export default RecentTransactions;
+}

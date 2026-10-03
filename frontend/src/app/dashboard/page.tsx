@@ -34,31 +34,136 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+import { Label } from "@/components/ui/label";
+
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+// Charts
 import PieChartDisplay from "@/components/charts/pieChart";
 import AreaChartDisplay from "@/components/charts/areaChart";
 import BarChartDisplay from "@/components/charts/barChart";
-
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import BudgetCategoryChart from "@/components/charts/budgetCategoryChart";
 
 // Data
 import RecentTransactions from "@/components/dashboard/recentTransactions";
-import BudgetCategoryChart from "@/components/charts/budgetCategoryChart";
 
-const valueData = {
-  balance: "$150.00",
-  income: "$100.00",
-  expenses: "$50.00",
-  savings: "$1000.00",
+type Transaction = {
+  id: number;
+  date: string;
+  merchant: string;
+  category: string;
+  bank: string;
+  type: "income" | "expense";
+  amount: number;
 };
 
 const Dashboard = () => {
   const today = new Date();
 
-  const currentMonth = today.getMonth() + 1;
-  const currentYear = today.getFullYear();
+  const [selectedMonth, setSelectedMonth] = React.useState(
+    today.getMonth() + 1,
+  );
+
+  const [selectedYear, setSelectedYear] = React.useState(today.getFullYear());
 
   const [chartType, setChartType] = React.useState<"area" | "bar">("area");
+
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+
+  const [loading, setLoading] = React.useState(true);
+
+  // Fetch transactions
+  React.useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/transactions`,
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch transactions");
+        }
+
+        const data: Transaction[] = await response.json();
+
+        setTransactions(data);
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
+
+  // Dashboard metrics
+  const {
+    monthlyIncome,
+    monthlyExpenses,
+    monthlySavings,
+    balanceThroughMonth,
+  } = React.useMemo(() => {
+    let income = 0;
+    let expenses = 0;
+    let balance = 0;
+
+    transactions.forEach((transaction) => {
+      const [transactionYear, transactionMonth] = transaction.date
+        .split("-")
+        .map(Number);
+
+      const amount = Number(transaction.amount);
+
+      // Selected month totals
+      if (
+        transactionYear === selectedYear &&
+        transactionMonth === selectedMonth
+      ) {
+        if (transaction.type === "income") {
+          income += amount;
+        }
+
+        if (transaction.type === "expense") {
+          expenses += amount;
+        }
+      }
+
+      // Balance through end of selected month
+      const isBeforeSelectedYear = transactionYear < selectedYear;
+
+      const isSelectedYearAndBeforeOrEqualMonth =
+        transactionYear === selectedYear && transactionMonth <= selectedMonth;
+
+      if (isBeforeSelectedYear || isSelectedYearAndBeforeOrEqualMonth) {
+        if (transaction.type === "income") {
+          balance += amount;
+        }
+
+        if (transaction.type === "expense") {
+          balance -= amount;
+        }
+      }
+    });
+
+    return {
+      monthlyIncome: income,
+      monthlyExpenses: expenses,
+      monthlySavings: income - expenses,
+      balanceThroughMonth: balance,
+    };
+  }, [transactions, selectedMonth, selectedYear]);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(value);
+  };
+
+  const selectedMonthName = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+  }).format(new Date(selectedYear, selectedMonth - 1));
 
   return (
     <PageTransition>
@@ -69,7 +174,8 @@ const Dashboard = () => {
             <h1 className="text-2xl font-bold">Dashboard</h1>
 
             <p className="text-muted-foreground">
-              A clear picture of your money for {currentMonth}/{currentYear}.
+              A clear picture of your money for {selectedMonthName}{" "}
+              {selectedYear}.
             </p>
           </div>
 
@@ -78,7 +184,10 @@ const Dashboard = () => {
             <Select
               placeholder="Month"
               aria-label="Month"
-              defaultValue={currentMonth}
+              selectedKey={String(selectedMonth)}
+              onSelectionChange={(key) => {
+                setSelectedMonth(Number(key));
+              }}
             >
               <SelectTrigger
                 aria-label="Month"
@@ -91,7 +200,7 @@ const Dashboard = () => {
                 <SelectGroup>
                   {Array.from({ length: 12 }, (_, index) => index + 1).map(
                     (month) => (
-                      <SelectItem key={month} value={month}>
+                      <SelectItem key={month} id={String(month)}>
                         {new Intl.DateTimeFormat("en-US", {
                           month: "long",
                         }).format(new Date(2000, month - 1))}
@@ -106,7 +215,10 @@ const Dashboard = () => {
             <Select
               placeholder="Year"
               aria-label="Year"
-              defaultValue={currentYear}
+              selectedKey={String(selectedYear)}
+              onSelectionChange={(key) => {
+                setSelectedYear(Number(key));
+              }}
             >
               <SelectTrigger
                 aria-label="Year"
@@ -117,21 +229,23 @@ const Dashboard = () => {
 
               <SelectContent>
                 <SelectGroup>
-                  {Array.from({ length: 101 }, (_, index) => 2000 + index).map(
-                    (year) => (
-                      <SelectItem key={year} value={year}>
+                  {Array.from({ length: 27 }, (_, index) => 2000 + index)
+                    .reverse()
+                    .map((year) => (
+                      <SelectItem key={year} id={String(year)}>
                         {year}
                       </SelectItem>
-                    ),
-                  )}
+                    ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
 
-            <Button aria-label="Add Transaction">
-              <Plus />
-              Add Transaction
-            </Button>
+            {/* <Link href="/transactions">
+              <Button aria-label="Add Transaction">
+                <Plus />
+                Add Transaction
+              </Button>
+            </Link> */}
           </div>
         </header>
 
@@ -139,7 +253,7 @@ const Dashboard = () => {
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Metric
             label="Balance through month"
-            value={valueData.balance}
+            value={loading ? "Loading..." : formatCurrency(balanceThroughMonth)}
             icon={<CircleDollarSign size={19} />}
             bg="bg-metric-1-bg"
             text="text-metric-1-text"
@@ -147,7 +261,7 @@ const Dashboard = () => {
 
           <Metric
             label="Income"
-            value={valueData.income}
+            value={loading ? "Loading..." : formatCurrency(monthlyIncome)}
             icon={<ArrowDownLeft size={19} />}
             bg="bg-metric-2-bg"
             text="text-metric-2-text"
@@ -155,7 +269,7 @@ const Dashboard = () => {
 
           <Metric
             label="Expenses"
-            value={valueData.expenses}
+            value={loading ? "Loading..." : formatCurrency(monthlyExpenses)}
             icon={<ArrowUpRight size={19} />}
             bg="bg-metric-3-bg"
             text="text-metric-3-text"
@@ -163,7 +277,7 @@ const Dashboard = () => {
 
           <Metric
             label="Savings"
-            value={valueData.savings}
+            value={loading ? "Loading..." : formatCurrency(monthlySavings)}
             icon={<PiggyBank size={19} />}
             bg="bg-metric-4-bg"
             text="text-metric-4-text"
@@ -176,46 +290,53 @@ const Dashboard = () => {
           <Card>
             <CardHeader>
               <CardTitle>Spending by Category</CardTitle>
+
+              <CardDescription>
+                {selectedMonthName} {selectedYear}
+              </CardDescription>
             </CardHeader>
 
             <CardContent>
-              <PieChartDisplay />
+              <PieChartDisplay month={selectedMonth} year={selectedYear} />
             </CardContent>
           </Card>
 
           {/* Income vs Expenses */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Income vs Expenses</CardTitle>
-              <CardDescription>
-                <RadioGroup
-                  value={chartType}
-                  onChange={(value) => {
-                    if (value === "area" || value === "bar") {
-                      setChartType(value);
-                    }
-                  }}
-                  orientation="horizontal"
-                  aria-label="Chart type"
-                  className="flex items-center gap-4"
-                >
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="area" id="chart-area" />
+              <div>
+                <CardTitle>Income vs Expenses</CardTitle>
 
-                    <Label htmlFor="chart-area" className="cursor-pointer">
-                      Area
-                    </Label>
-                  </div>
+                <CardDescription>{selectedYear}</CardDescription>
+              </div>
 
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="bar" id="chart-bar" />
+              <RadioGroup
+                value={chartType}
+                onChange={(value) => {
+                  if (value === "area" || value === "bar") {
+                    setChartType(value);
+                  }
+                }}
+                orientation="horizontal"
+                aria-label="Chart type"
+                className="flex items-center gap-4"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="area" id="chart-area" />
 
-                    <Label htmlFor="chart-bar" className="cursor-pointer">
-                      Bar
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </CardDescription>
+                  <Label htmlFor="chart-area" className="cursor-pointer">
+                    Area
+                  </Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="bar" id="chart-bar" />
+
+                  <Label htmlFor="chart-bar" className="cursor-pointer">
+                    Bar
+                  </Label>
+                </div>
+              </RadioGroup>
             </CardHeader>
 
             <CardContent>
@@ -233,22 +354,26 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Budget Progress</CardTitle>
+
               <Link href="/budgets">
                 <Button variant="link">Manage Budgets</Button>
               </Link>
             </CardHeader>
+
             <CardContent>
-              <BudgetCategoryChart />
+              <BudgetCategoryChart month={selectedMonth} year={selectedYear} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Recent Transactions</CardTitle>
+
               <Link href="/transactions">
                 <Button variant="link">View All</Button>
               </Link>
             </CardHeader>
+
             <CardContent>
               <RecentTransactions />
             </CardContent>
