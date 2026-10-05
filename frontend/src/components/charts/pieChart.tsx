@@ -10,16 +10,8 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 
-type Transaction = {
-  id: number;
-  date: string;
-  merchant: string;
-  category: string;
-  bank: string;
-  type: "income" | "expense";
-  amount: number;
-  "pie-color": string;
-};
+import { useFinanceList } from "@/lib/use-finance-list";
+import type { Transaction } from "@/types/api";
 
 type SpendingChartData = {
   category: string;
@@ -39,82 +31,33 @@ const spendingChartConfig = {
 } satisfies ChartConfig;
 
 const PieChartDisplay = ({ month, year }: PieChartDisplayProps) => {
-  const [spendingChartData, setSpendingChartData] = React.useState<
-    SpendingChartData[]
-  >([]);
-
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    const fetchTransactions = async () => {
-      setLoading(true);
-
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/transactions`,
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch transactions");
-        }
-
-        const transactions: Transaction[] = await response.json();
-
-        const categoryTotals: Record<
-          string,
-          {
-            amount: number;
-            fill: string;
-          }
-        > = {};
-
-        transactions.forEach((transaction) => {
-          // Only expenses
-          if (transaction.type !== "expense") {
-            return;
-          }
-
-          const [transactionYear, transactionMonth] = transaction.date
-            .split("-")
-            .map(Number);
-
-          // Only transactions for selected month/year
-          if (transactionYear !== year || transactionMonth !== month) {
-            return;
-          }
-
-          const category = transaction.category.trim();
-
-          // Create category if it doesn't exist yet
-          if (!categoryTotals[category]) {
-            categoryTotals[category] = {
-              amount: 0,
-              fill: transaction["pie-color"] || "var(--chart-gray-2)",
-            };
-          }
-
-          // Add transaction amount to category total
-          categoryTotals[category].amount += Number(transaction.amount);
-        });
-
-        const data: SpendingChartData[] = Object.entries(categoryTotals).map(
-          ([category, values]) => ({
-            category,
-            amount: values.amount,
-            fill: values.fill,
-          }),
-        );
-
-        setSpendingChartData(data);
-      } catch (error) {
-        console.error("Error fetching spending chart data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTransactions();
-  }, [month, year]);
+  const {
+    data: transactions,
+    loading,
+    error,
+  } = useFinanceList<Transaction>("/transactions");
+  const spendingChartData = React.useMemo<SpendingChartData[]>(() => {
+    const totals = new Map<string, SpendingChartData>();
+    for (const transaction of transactions) {
+      const [transactionYear, transactionMonth] = transaction.date
+        .split("-")
+        .map(Number);
+      if (
+        transaction.type !== "expense" ||
+        transactionYear !== year ||
+        transactionMonth !== month
+      )
+        continue;
+      const entry = totals.get(transaction.category) ?? {
+        category: transaction.category,
+        amount: 0,
+        fill: transaction["pie-color"],
+      };
+      entry.amount += Number(transaction.amount);
+      totals.set(transaction.category, entry);
+    }
+    return [...totals.values()];
+  }, [transactions, month, year]);
 
   const totalSpending = React.useMemo(() => {
     return spendingChartData.reduce((total, item) => total + item.amount, 0);
@@ -127,6 +70,19 @@ const PieChartDisplay = ({ month, year }: PieChartDisplayProps) => {
       </div>
     );
   }
+
+  if (error)
+    return (
+      <p role="alert" className="text-sm text-destructive">
+        {error}
+      </p>
+    );
+  if (!spendingChartData.length)
+    return (
+      <p className="text-sm text-muted-foreground">
+        No expenses for this month.
+      </p>
+    );
 
   return (
     <ChartContainer

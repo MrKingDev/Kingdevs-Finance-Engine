@@ -26,7 +26,7 @@ type ChartData = {
 };
 
 type BarChart2Props = {
-  category: string;
+  category: string | null;
   month: number;
   year: number;
 };
@@ -77,7 +77,7 @@ const BarChart2 = ({ category, month, year }: BarChart2Props) => {
       }
 
       // Selected category
-      if (category !== "all" && transaction.category !== category) {
+      if (category !== null && transaction.category !== category) {
         return;
       }
 

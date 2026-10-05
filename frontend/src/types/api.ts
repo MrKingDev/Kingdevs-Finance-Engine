@@ -1,4 +1,5 @@
-export type Category = { name: string };
+export type Category = { name: string; color: string };
+export type CategoryColorOption = { value: string; label: string };
 
 export type Budget = {
   id: number;

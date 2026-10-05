@@ -26,7 +26,8 @@ import {
 import { Plus } from "lucide-react";
 
 import BudgetCard from "@/components/budgets/budgetCard";
-import type { Budget, Category } from "@/types/api";
+import type { Budget } from "@/types/api";
+import CategorySelect from "@/components/categories/categorySelect";
 import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
 import { useFinanceList } from "@/lib/use-finance-list";
 
@@ -87,7 +88,6 @@ const Budgets = () => {
     loading: isLoading,
     error,
   } = useFinanceList<Budget>("/budgets");
-  const { data: categories } = useFinanceList<Category>("/categories");
   const [category, setCategory] = React.useState("");
   const [scope, setScope] = React.useState("category");
 
@@ -125,7 +125,7 @@ const Budgets = () => {
         return;
       }
       if (scope === "category" && !category.trim()) {
-        setCreateError("Choose or enter a category.");
+        setCreateError("Select a category. Create one in Settings if needed.");
         return;
       }
 
@@ -235,30 +235,12 @@ const Budgets = () => {
                   </Select>
                   {scope === "category" ? (
                     <div className="space-y-2">
-                      <label
-                        htmlFor="budget-category"
-                        className="text-sm font-medium"
-                      >
-                        Category
-                      </label>
-                      <Input
-                        id="budget-category"
-                        list="budget-categories"
-                        value={category}
-                        onChange={(event) => setCategory(event.target.value)}
-                        maxLength={100}
+                      <p className="text-sm font-medium">Category</p>
+                      <CategorySelect
+                        value={category || null}
+                        onChange={(value) => setCategory(value ?? "")}
                         required
-                        placeholder="e.g. Groceries"
                       />
-                      <datalist id="budget-categories">
-                        {categories.map((item) => (
-                          <option key={item.name} value={item.name} />
-                        ))}
-                      </datalist>
-                      <p className="text-xs text-muted-foreground">
-                        Choose an existing category or type a new one. Use the
-                        same category when adding expenses.
-                      </p>
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">

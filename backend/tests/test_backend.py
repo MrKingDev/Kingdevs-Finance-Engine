@@ -133,6 +133,8 @@ class BudgetTests(unittest.TestCase):
     def create_budget(self, **overrides):
         data = {"month": 2, "year": 2024, "amount": "100.00"}
         data.update(overrides)
+        if data.get("category"):
+            self.client.post("/categories", json={"name": data["category"], "color": "chart-blue-2"})
         return self.client.post("/budgets", json=data)
 
     def test_migration_matches_models_and_can_roll_back(self):
@@ -237,6 +239,7 @@ class BudgetTests(unittest.TestCase):
         data = {"date": "2024-02-15", "merchant": "Test store", "bank": "Test account",
                 "category": "Groceries", "type": "expense", "amount": "25.50"}
         data.update(overrides)
+        self.client.post("/categories", json={"name": data["category"], "color": "chart-blue-2"})
         return self.client.post("/transactions", json=data)
 
     def test_category_budget_counts_only_matching_month_and_expenses(self):
@@ -255,7 +258,7 @@ class BudgetTests(unittest.TestCase):
         self.assertEqual(self.create_budget(category="  Groceries  ").status_code, 201)
         transaction = self.create_transaction(category="groceries").json()
         self.assertEqual(transaction["category"], "Groceries")
-        self.assertEqual(self.client.get("/categories").json(), [{"name": "Groceries"}])
+        self.assertEqual(self.client.get("/categories").json(), [{"name": "Groceries", "color": "chart-blue-2"}])
         self.assertEqual(self.create_budget(category=" GROCERIES ").status_code, 409)
         self.assertEqual(self.create_budget(category="Dining").status_code, 201)
         self.assertEqual(self.create_budget(category="Groceries", month=3).status_code, 201)
@@ -323,6 +326,66 @@ class BudgetTests(unittest.TestCase):
                 session.commit()
             session.rollback()
 
+    def test_create_category_and_reject_case_insensitive_duplicates(self):
+        created = self.client.post("/categories", json={"name": "  Food / Dining  ", "color": "chart-orange-2"})
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.json(), {"name": "Food / Dining", "color": "chart-orange-2"})
+        duplicate = self.client.post("/categories", json={"name": "food / dining", "color": "chart-red-2"})
+        self.assertEqual(duplicate.status_code, 409)
+        self.assertEqual(self.client.get("/categories").json(), [created.json()])
+
+    def test_category_validation_and_palette_match_frontend_css(self):
+        palette = self.client.get("/categories/colors").json()
+        css = (BACKEND_ROOT.parent / "frontend/src/app/globals.css").read_text(encoding="utf-8")
+        self.assertEqual(len(palette), 17)
+        for color in palette:
+            self.assertIn(f"--{color['value']}:", css)
+        for name, color in (("   ", "chart-blue-2"), ("a" * 101, "chart-blue-2"), ("Food", "red"), ("Food", "var(--chart-blue-2)"), ("Food", None)):
+            with self.subTest(name=name, color=color):
+                self.assertEqual(self.client.post("/categories", json={"name": name, "color": color}).status_code, 422)
+        self.assertEqual(self.client.get("/categories").json(), [])
+
+    def test_financial_writes_require_an_existing_category(self):
+        self.assertEqual(self.client.post("/budgets", json={"month": 2, "year": 2024, "amount": "100", "category": "Missing"}).status_code, 422)
+        payload = {"date": "2024-02-01", "merchant": "Test", "bank": "Test", "type": "expense", "category": "Missing", "amount": "10"}
+        self.assertEqual(self.client.post("/transactions", json=payload).status_code, 422)
+        self.assertEqual(self.client.get("/categories").json(), [])
+        self.assertEqual(self.client.get("/transactions").json(), [])
+        budget = self.create_budget().json()
+        self.assertEqual(self.client.put(f"/budgets/{budget['id']}", json={"category": "Missing"}).status_code, 422)
+        transaction = self.create_transaction().json()
+        self.assertEqual(self.client.patch(f"/transactions/{transaction['id']}", json={"category": "Missing"}).status_code, 422)
+        self.assertEqual(self.client.get(f"/transactions/{transaction['id']}").json()["category"], "Groceries")
+
+    def test_category_color_is_authoritative_for_existing_transactions(self):
+        self.client.post("/categories", json={"name": "Groceries", "color": "chart-emerald-2"})
+        transaction = self.create_transaction(**{"pie-color": "red"}).json()
+        self.assertEqual(transaction["pie-color"], "var(--chart-emerald-2)")
+        budget = self.create_budget(category="Groceries").json()
+        recolor = self.client.patch("/categories/groceries", json={"color": "chart-purple-2"})
+        self.assertEqual(recolor.status_code, 200)
+        self.assertEqual(self.client.get("/transactions").json()[0]["pie-color"], "var(--chart-purple-2)")
+        self.assertEqual(self.client.get(f"/transactions/{transaction['id']}").json()["pie-color"], "var(--chart-purple-2)")
+        self.assertEqual(self.client.get(f"/budgets/{budget['id']}").json()["spent"], budget["spent"])
+        self.client.post("/categories", json={"name": "Dining", "color": "chart-orange-2"})
+        changed = self.client.patch(f"/transactions/{transaction['id']}", json={"category": "Dining"})
+        self.assertEqual(changed.json()["pie-color"], "var(--chart-orange-2)")
+
+    def test_category_color_updates_validate_and_preserve_names(self):
+        self.client.post("/categories", json={"name": "Food / Dining", "color": "chart-blue-2"})
+        endpoint = "/categories/Food%20%2F%20Dining"
+        self.assertEqual(self.client.patch(endpoint, json={"color": "chart-pink-2"}).status_code, 200)
+        self.assertEqual(self.client.patch(endpoint, json={"color": "invalid"}).status_code, 422)
+        self.assertEqual(self.client.get("/categories").json(), [{"name": "Food / Dining", "color": "chart-pink-2"}])
+        self.assertEqual(self.client.patch("/categories/Missing", json={"color": "chart-blue-2"}).status_code, 404)
+
+    def test_category_color_constraint_is_enforced_by_database(self):
+        with self.sessions() as session:
+            session.add(Category(name="Test", color="invalid"))
+            with self.assertRaises(IntegrityError):
+                session.commit()
+            session.rollback()
+
     def test_downgrade_refuses_to_discard_multiple_category_budgets(self):
         self.create_budget(category="Groceries")
         self.create_budget(category="Dining")
@@ -335,6 +398,25 @@ class BudgetTests(unittest.TestCase):
 
 
 class MigrationPreservationTests(unittest.TestCase):
+    def test_color_migration_preserves_links_and_reuses_existing_chart_color(self):
+        engine = create_engine("sqlite://")
+        self.addCleanup(engine.dispose)
+        with engine.begin() as connection:
+            connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+            config = migration_config()
+            config.attributes["connection"] = connection
+            command.upgrade(config, "0002")
+            connection.execute(text("INSERT INTO categories (name) VALUES ('Food'), ('Uncolored')"))
+            connection.execute(text("INSERT INTO budgets (month, year, amount, category) VALUES (2, 2024, 100, 'Food')"))
+            connection.execute(text("INSERT INTO transactions (date, merchant, category, bank, type, amount, pie_color) VALUES ('2024-02-01', 'Test', 'Food', 'Test', 'expense', 10, 'var(--chart-orange-2)')"))
+            command.upgrade(config, "head")
+            self.assertEqual(connection.scalar(text("SELECT color FROM categories WHERE name = 'Food'")), "chart-orange-2")
+            self.assertEqual(connection.scalar(text("SELECT color FROM categories WHERE name = 'Uncolored'")), "chart-blue-2")
+            self.assertEqual(connection.scalar(text("SELECT category FROM budgets")), "Food")
+            self.assertEqual(connection.scalar(text("SELECT amount FROM transactions")), 10)
+            command.downgrade(config, "0002")
+            self.assertEqual(connection.scalar(text("SELECT category FROM transactions")), "Food")
+
     def test_existing_budget_and_transactions_survive_category_migration(self):
         engine = create_engine("sqlite://")
         self.addCleanup(engine.dispose)

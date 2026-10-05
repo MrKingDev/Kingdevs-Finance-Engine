@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models.transaction import Transaction
+from backend.models.category import Category
 from backend.schemas.transaction import TransactionCreate, TransactionRead, TransactionUpdate
 from backend.services.categories import resolve_category
 
@@ -26,6 +27,7 @@ def list_transactions(db: Session = Depends(get_db)):
 def create_transaction(data: TransactionCreate, db: Session = Depends(get_db)):
     values = data.model_dump()
     values["category"] = resolve_category(db, values["category"])
+    values["pie_color"] = f"var(--{db.get(Category, values['category']).color})"
     transaction = Transaction(**values)
     db.add(transaction)
     db.commit()
@@ -44,6 +46,9 @@ def update_transaction(transaction_id: int, data: TransactionUpdate, db: Session
     values = data.model_dump(exclude_unset=True)
     if "category" in values:
         values["category"] = resolve_category(db, values["category"])
+    # Keep the legacy column compatible; API responses use the shared category color.
+    name = values.get("category", transaction.category)
+    values["pie_color"] = f"var(--{db.get(Category, name).color})"
     for name, value in values.items():
         setattr(transaction, name, value)
     db.commit()

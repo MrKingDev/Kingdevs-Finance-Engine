@@ -16,13 +16,13 @@ The backend persists transactions, shared categories, and monthly budgets throug
 | --- | --- | --- |
 | `/` | Landing page, project links and backend health indicator. | Health confirms the API responds, not database readiness. |
 | `/dashboard` | Selected-month income, expenses and savings; cumulative transaction balance; category spending; five recent saved transactions; real budget progress for the selected period. | Most financial metrics are calculated in the browser. Income/expense charts use the current calendar year independently of the page selector. Add Transaction has no action here. |
-| `/transactions` | Saves and deletes PostgreSQL transactions; category suggestions come from the shared category table; client-side search and filters; loading/error/empty states. | No edit UI, server pagination or account model yet; bank filter options remain fixed. |
+| `/transactions` | Saves and deletes PostgreSQL transactions; category dropdowns show saved categories and their colors; client-side search and filters; loading/error/empty states. | No edit UI, server pagination or account model yet; bank filter options remain fixed. |
 | `/budgets` | Creates one budget per category/month/year or an optional All categories budget; displays backend spending, remaining and usage; supports deletion. | No edit UI is connected; updates are available through the API. |
 | `/goals` | Creates savings/debt-payoff goals locally; displays progress; confirms deletion and shows a toast. | Goals reset on reload. Add Entry fields do not update contributions, income or expenses. No goal API exists. |
-| `/reports` | Selected-month income, expenses and net cash flow; category spending; income/expense charts; weekly category filter; monthly history; real budget performance for the selected period. | Most calculations use saved API transactions in the browser. Filter scope differs by widget; weekly category choices remain fixed. |
+| `/reports` | Selected-month income, expenses and net cash flow; category spending; income/expense charts; saved-category weekly filter; monthly history; real budget performance for the selected period. | Most calculations use saved API transactions in the browser. Filter scope differs by widget. |
 | `/tools` | Subscription Checker, Paycheck Splitter, Salary Converter, Bill Splitter, Compound Interest, Trip Budget and Wish List. | Browser-only tools; the wish list is the only tool that persists its inputs. |
 | `/ai` | Page heading and description. | No AI service or assistant is connected. |
-| `/settings` | Import CSV, Preferences, Downloadables, Rules, Categories and Clear Data tabs. | Panels are placeholders; import/export and Clear Data have no implemented backend operations. |
+| `/settings` | Categories tab creates saved categories with one of 17 chart colors and updates existing category colors. Other tabs include Import CSV, Preferences, Downloadables, Rules and Clear Data. | Other panels remain placeholders; import/export and Clear Data have no implemented backend operations. Category rename/delete is not implemented. |
 
 Shared UI includes a collapsible sidebar, responsive layouts, themes, page transitions, form controls, chart tooltips, dialogs, Sonner toasts and a custom 404 page.
 
@@ -56,9 +56,9 @@ Versions reflect [frontend/package.json](frontend/package.json) and [backend/pyp
 | Validation | Pydantic transaction and budget schemas |
 | Database | PostgreSQL 17 in Docker |
 | ORM/driver | SQLAlchemy `>=2.1.1`, Psycopg `>=3.2,<4` with binary extra |
-| Migrations | Alembic `>=1.20.0`; current head `0002` |
+| Migrations | Alembic `>=1.20.0`; current head `0003` |
 | Backend packages | uv, `pyproject.toml`, `uv.lock`, python-dotenv |
-| Tests | 28 backend regressions using unittest and FastAPI TestClient |
+| Tests | 35 backend regressions using unittest and FastAPI TestClient |
 | API docs | FastAPI Swagger, ReDoc and OpenAPI |
 
 React Compiler is enabled. The root layout uses Geist, Geist Mono, DM Sans and Nunito Sans through `next/font/google`. Authentication, Pytest adoption, GitHub Actions, bank integration, Redis and workers remain future work. Only PostgreSQL is currently containerized.
@@ -108,9 +108,9 @@ uv run alembic check
 
 The service is `db`, container is `finance-engine-db`, database is `finance_engine` and role is `finance_user`. Windows clients connect to **127.0.0.1:5433**, forwarding to PostgreSQL's internal port 5432. Port 5433 avoids the separate example project's database on port 5432.
 
-Data is stored in the named volume `backend_finance_engine_postgres_data`. Revision `0001` creates `budgets` and `transactions`; `0002` adds `categories` and category references. Existing budgets retain their All categories scope. No transactions are seeded. Apply these supplied migrations instead of generating another initial revision.
+Data is stored in the named volume `backend_finance_engine_postgres_data`. Revision `0001` creates `budgets` and `transactions`; `0002` adds `categories` and category references; `0003` adds category chart colors. Existing financial records are preserved. No transactions are seeded. Apply these supplied migrations instead of generating another initial revision.
 
-Expected checks: `0002 (head)` and `No new upgrade operations detected.` See the [backend guide](backend/README.md) for lifecycle commands and troubleshooting.
+Expected checks: `0003 (head)` and `No new upgrade operations detected.` See the [backend guide](backend/README.md) for lifecycle commands and troubleshooting.
 
 ### 3. Start the API
 
@@ -153,9 +153,12 @@ Routes are unversioned and unauthenticated. There are no `/api/v1` endpoints yet
 | --- | --- | --- |
 | GET | `/` | API welcome message. |
 | GET | `/health` | `{"status":"Ok"}`; no PostgreSQL check. |
-| GET | `/categories` | Shared category names, sorted alphabetically. |
+| GET | `/categories` | Saved category names/colors, sorted alphabetically. |
+| GET | `/categories/colors` | The 17 allowed chart tokens and their display labels. |
+| POST | `/categories` | Creates a category with name/color, 201; duplicate name ignoring case/outer spaces, 409. |
+| PATCH | `/categories/{name}` | Changes a category's color; names with special characters must be URL-encoded. |
 | GET | `/transactions` | Saved transactions, descending date/ID; no server-side filtering or pagination. |
-| POST | `/transactions` | Saves a transaction and resolves/creates its category; returns 201. |
+| POST | `/transactions` | Saves a transaction using an existing category; returns 201. Unknown categories return 422. |
 | GET / PATCH / DELETE | `/transactions/{id}` | Read, partially update, or delete a saved transaction; missing ID returns 404. Delete returns 204. |
 | GET | `/budgets` | Persistent budgets with calculated totals; optional `month` and `year` filters. |
 | POST | `/budgets` | Saves a category or overall monthly budget; returns 201. Duplicate category/month/year returns 409. |
@@ -164,7 +167,7 @@ Routes are unversioned and unauthenticated. There are no `/api/v1` endpoints yet
 | DELETE | `/budgets/{id}` | Deletes a budget; returns 204. |
 | GET | `/docs`, `/redoc`, `/openapi.json` | Generated API documentation. |
 
-Budget request:
+Budget request (create `Groceries` in Settings or via `POST /categories` first):
 
 ```json
 {
@@ -186,22 +189,31 @@ Valid transaction request (POST saves it):
   "category": "Dining",
   "bank": "Chase",
   "type": "expense",
-  "amount": "4.50",
-  "pie-color": "var(--chart-orange-2)"
+  "amount": "4.50"
 }
 ```
 
-The schema requires a date, nonempty text fields, lowercase `income`/`expense`, and a positive amount with at most two decimal places. `pie-color` (or `pie_color`) is optional and defaults to `var(--chart-1)`. Invalid bodies return 422. The frontend refreshes saved transactions and mounted budget views after writes.
+The schema requires a date, nonempty text fields, an existing category (create `Dining` first for this example), lowercase `income`/`expense`, and a positive amount with at most two decimal places. The response's `pie-color` comes from the saved category. Legacy per-transaction color input is accepted but overridden. Invalid bodies or unknown categories return 422. The frontend refreshes saved transactions, categories, pie charts and mounted budget views after writes or window focus.
+
+### Create categories and choose chart colors
+
+Open **Settings → Categories** (or `/settings#categories`), enter a name, pick a color swatch, and select **Create category**. The category appears in the budget and transaction dropdowns and report filters. Existing categories appear alongside the creator with a color selector.
+
+The 17 swatches use this project's existing CSS chart palette. The backend stores a token such as `chart-emerald-2`; the pie chart receives `var(--chart-emerald-2)`. Changing the category color updates existing transactions' chart appearance on the next fetch without changing their amounts or budget calculations.
+
+Categories must now be created in Settings first: financial forms no longer accept typed category names, and the API rejects unknown categories instead of silently creating them. Names differing only in capitalization or outer spaces are duplicates. Wish List and Paycheck Splitter retain their separate tool categories, as requested.
+
+See [how this is implemented](backend/README.md#how-the-settings-category-creator-is-made) for the database, API, frontend files, color flow and migration details.
 
 ### How category budgets work
 
-1. On **Budgets**, choose **Add Budget → One category**, enter or select `Groceries`, choose October 2026, and set a limit of `$400`.
+1. Create `Groceries` in **Settings → Categories**. On **Budgets**, choose **Add Budget → One category**, select `Groceries`, choose October 2026, and set a limit of `$400`.
 2. On **Transactions**, save a `$125` **expense** categorized as `Groceries`, dated in October 2026.
 3. The budget shows **$125 spent, $275 remaining, 31.25% used**. Dashboard/report budget widgets show the same totals when October 2026 is selected.
 
 Only the category, transaction date, and `expense` type determine inclusion; the merchant and bank do not. Existing matching expenses count even if entered before the budget. Changing a transaction's amount/category/date/type or deleting it affects the totals on the next read. Transaction editing currently uses `PATCH /transactions/{id}` in Swagger.
 
-Category names share one database record: `Groceries`, `groceries`, and ` Groceries ` resolve to the same stored name. The first budget or transaction using a new name creates it; both forms offer these names as suggestions. Category renaming/deletion and the Settings category-management panel remain future work.
+Category names share one database record: `Groceries`, `groceries`, and ` Groceries ` resolve to the same stored name. Settings creates categories and manages their colors; financial forms select these saved names. Category renaming/deletion remains future work.
 
 You may have Groceries and Dining budgets in the same month, but only one budget per category/month/year. **All categories** (`category: null`) counts every expense in the month. The existing monthly budget was preserved this way. Overall and category budgets overlap: do not add their spent figures together. Each budget is a spending limit, not a transfer of money or an account balance.
 
@@ -221,7 +233,7 @@ Next.js :3001
 | --- | --- |
 | Transactions/recent transactions | PostgreSQL records; integer IDs, Decimal amounts serialized as strings. |
 | Dashboard metrics | Browser calculations. Selected-month net income is labeled savings; cumulative transaction balance is not an account balance. |
-| Category pie chart | Saved expenses filtered by selected month/year; colors use `pie-color`. |
+| Category pie chart | Saved expenses filtered by selected month/year; `pie-color` is derived from each category's saved color. |
 | Area/bar income-expense charts | Twelve months of the current calendar year, independent of the page's selected year. |
 | Weekly report | Category and selected month/year filters; four buckets: days 1-7, 8-14, 15-21 and 22 through month-end. |
 | Monthly history/category breakdown | Up to six populated months for history; all fetched expenses for category breakdown. Neither follows page filters. |
@@ -272,7 +284,7 @@ kingdevs-finance-engine/
     |   |-- README                # migration workflow
     |   |-- env.py
     |   |-- script.py.mako
-    |   +-- versions/             # 0001 foundation; 0002 category budgets
+    |   +-- versions/             # 0001 foundation; 0002 category budgets; 0003 colors
     |-- tests/test_backend.py
     +-- src/backend/
         |-- main.py
@@ -309,9 +321,9 @@ From `backend/`:
 | `docker compose stop db` | Stop PostgreSQL while retaining data. |
 | `uv run alembic current` | Show database revision. |
 | `uv run alembic check` | Compare database schema with model metadata. |
-| `uv run python -B -m unittest discover -s tests -v` | Run the 28 backend regressions. |
+| `uv run python -B -m unittest discover -s tests -v` | Run the 35 backend regressions. |
 
-The suite covers imports/configuration, persistent transaction CRUD, category reuse, category/month/type isolation, budget CRUD/conflicts, validation, leap days, migration preservation and guarded rollback. It uses isolated SQLite memory and renders PostgreSQL migration SQL. All 28 tests passed during category integration; live PostgreSQL checks also passed and their rows were rolled back. Migration `0002` was applied, the existing budget was preserved, and `alembic check` reported no pending changes. TestClient emits an httpx deprecation warning; SQLite expression-index reflection also warns, so PostgreSQL schema parity was checked separately.
+The suite covers imports/configuration, persistent transaction CRUD, category creation/duplicates, palette validation against CSS, recoloring existing transactions, unknown-category rejection, category/month/type isolation, budget CRUD/conflicts, validation, leap days, migration preservation and guarded rollback. All 35 tests passed. Live PostgreSQL category creation/recoloring/budget checks passed with verification writes rolled back. Migration `0003` preserved existing financial records, and `alembic check` reported no pending changes. TestClient emits an httpx deprecation warning; SQLite expression-index reflection also warns, so PostgreSQL schema parity was checked separately.
 
 The frontend typecheck currently reports eight pre-existing errors in Compound Interest, Paycheck Splitter, Salary Converter and Trip Budget UI props; no category-integration file reports a type error. No full browser end-to-end run is claimed. No frontend automated suite or GitHub Actions workflow is present. `backend-test.tsx` is a UI health indicator.
 

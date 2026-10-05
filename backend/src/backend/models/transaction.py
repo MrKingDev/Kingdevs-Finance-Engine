@@ -2,9 +2,10 @@ from datetime import date as Date
 from decimal import Decimal
 
 from sqlalchemy import CheckConstraint, Date as SQLDate, ForeignKey, Index, Numeric, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.database.base import Base
+from backend.models.category import Category
 
 
 class Transaction(Base):
@@ -23,6 +24,12 @@ class Transaction(Base):
     pie_color: Mapped[str] = mapped_column(
         String(100), nullable=False, default="var(--chart-1)"
     )
+    category_record: Mapped[Category] = relationship(lazy="joined")
+
+    @property
+    def category_chart_color(self) -> str:
+        # The category is authoritative, including for old transactions after recoloring.
+        return f"var(--{self.category_record.color})"
 
     __table_args__ = (
         CheckConstraint("amount > 0", name="check_transaction_amount"),

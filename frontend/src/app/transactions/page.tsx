@@ -38,11 +38,9 @@ import { Separator } from "@/components/ui/separator";
 
 import TransactionsTable from "@/components/transactions/transactionsTable";
 import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
-import { useFinanceList } from "@/lib/use-finance-list";
-import type { Category } from "@/types/api";
+import CategorySelect from "@/components/categories/categorySelect";
 
 const Transactions = () => {
-  const { data: categories } = useFinanceList<Category>("/categories");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   // States
@@ -87,6 +85,11 @@ const Transactions = () => {
     try {
       setAddingTransaction(true);
       setCreateError(null);
+
+      if (!formData.category) {
+        setCreateError("Select a category. Create one in Settings if needed.");
+        return;
+      }
 
       const response = await fetch(`${API_URL}/transactions`, {
         method: "POST",
@@ -192,29 +195,19 @@ const Transactions = () => {
 
                   {/* Category */}
                   <div className="grid gap-2">
-                    <Label htmlFor="category">Category</Label>
-
-                    <Input
-                      id="category"
-                      list="transaction-categories"
-                      required
-                      maxLength={100}
-                      placeholder="Groceries"
-                      value={formData.category}
-                      onChange={(event) =>
-                        setFormData({
-                          ...formData,
-                          category: event.target.value,
-                        })
+                    <p className="text-sm font-medium">Category</p>
+                    <CategorySelect
+                      value={formData.category || null}
+                      onChange={(value) =>
+                        setFormData((current) => ({
+                          ...current,
+                          category: value ?? "",
+                        }))
                       }
+                      required
                     />
                   </div>
 
-                  <datalist id="transaction-categories">
-                    {categories.map((item) => (
-                      <option key={item.name} value={item.name} />
-                    ))}
-                  </datalist>
                   <p className="text-xs text-muted-foreground">
                     Use the budget's category to count this expense toward its
                     monthly limit.
@@ -341,34 +334,12 @@ const Transactions = () => {
                 </Select>
 
                 {/* Category */}
-                <Select
-                  placeholder="Pick a Category"
-                  className="w-full"
-                  selectedKey={
-                    category === null ? "all" : `category:${category}`
-                  }
-                  onSelectionChange={(value) => {
-                    if (value !== null)
-                      setCategory(
-                        value === "all"
-                          ? null
-                          : String(value).slice("category:".length),
-                      );
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem id="all">All categories</SelectItem>
-                    {categories.map((item) => (
-                      <SelectItem key={item.name} id={`category:${item.name}`}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CategorySelect
+                  value={category}
+                  onChange={setCategory}
+                  allowAll
+                  label="Filter by category"
+                />
 
                 {/* Bank */}
                 <Select

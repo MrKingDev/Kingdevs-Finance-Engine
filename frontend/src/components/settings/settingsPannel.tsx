@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import CategoriesSettings from "./pages/categories";
+
 import {
   Card,
   CardContent,
@@ -94,12 +97,12 @@ const tabOptions = [
         <CardHeader>
           <CardTitle>Categories Settings</CardTitle>
           <CardDescription>
-            Organize spending with accessible colors and icons.
+            Create shared categories and choose their spending chart colors.
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          <p>Option 5 content</p>
+          <CategoriesSettings />
         </CardContent>
       </Card>
     ),
@@ -127,8 +130,22 @@ const tabOptions = [
 ];
 
 export default function SettingsPanel() {
+  const [selectedTab, setSelectedTab] = useState("csv");
+  useEffect(() => {
+    const selectHashTab = () => {
+      const key = window.location.hash.slice(1);
+      if (tabOptions.some((tab) => tab.optionId === key)) setSelectedTab(key);
+    };
+    selectHashTab();
+    window.addEventListener("hashchange", selectHashTab);
+    return () => window.removeEventListener("hashchange", selectHashTab);
+  }, []);
   return (
-    <Tabs defaultSelectedKey="csv" className="w-full">
+    <Tabs
+      selectedKey={selectedTab}
+      onSelectionChange={(key) => setSelectedTab(String(key))}
+      className="w-full"
+    >
       <div
         className="
       w-full

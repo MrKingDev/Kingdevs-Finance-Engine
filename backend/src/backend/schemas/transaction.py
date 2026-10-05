@@ -92,6 +92,7 @@ class TransactionUpdate(BaseModel):
 
 class TransactionRead(TransactionBase):
     id: int
+    pie_color: str = Field(validation_alias="category_chart_color", serialization_alias="pie-color")
 
     model_config = ConfigDict(
         from_attributes=True,

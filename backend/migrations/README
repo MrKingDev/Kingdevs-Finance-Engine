@@ -18,16 +18,16 @@ For a fresh checkout, configure `backend/.env` as described in the backend guide
 
 ## Current revision
 
-The current head is `0002`, defined in [0002_category_budgets.py](versions/0002_category_budgets.py). Its parent is [0001_create_budgets_and_transactions.py](versions/0001_create_budgets_and_transactions.py), which remains unchanged.
+The current head is `0003`, defined in [0003_category_colors.py](versions/0003_category_colors.py). Its parent is [0002_category_budgets.py](versions/0002_category_budgets.py), following [0001_create_budgets_and_transactions.py](versions/0001_create_budgets_and_transactions.py). Earlier revisions remain unchanged.
 
 | Table | Columns and constraints |
 | --- | --- |
-| `categories` | `name VARCHAR(100)` primary key, nonblank check; unique index on `lower(name)` prevents case variants. |
+| `categories` | `name VARCHAR(100)` primary key, nonblank check; unique index on `lower(name)` prevents case variants. Required `color VARCHAR(32)`, server default `chart-blue-2`, CHECK limited to 17 supported chart tokens. |
 | `budgets` | Integer primary key `id`; required integer `month` and `year`; required `amount NUMERIC(12, 2)`; nullable `category VARCHAR(100)` references `categories.name` with ON DELETE RESTRICT. Unique month/year/category; a partial unique month/year index WHERE category IS NULL permits only one overall budget. Month 1-12, year 2000-2100, positive amount; index on `id`. |
 | `transactions` | Integer primary key `id`; required `date DATE`, `merchant VARCHAR(255)`, `category VARCHAR(100)` referencing `categories.name` with ON DELETE RESTRICT, `bank VARCHAR(100)`, `type VARCHAR(7)`, `amount NUMERIC(12, 2)`, `pie_color VARCHAR(100)`. Positive amount; type income/expense. Composite indexes on type/date and category/type/date. |
 | `alembic_version` | Managed by Alembic; records the applied revision. |
 
-The transaction color's fallback is an ORM/schema default, not a database server default; direct SQL inserts must supply `pie_color`. Direct SQL writers must also create/reuse the canonical category before inserting a financial row. These tables have no user ownership or timestamps yet.
+Direct SQL inserts must still supply the legacy transaction `pie_color` field and create/reuse the canonical category before inserting a financial row. HTTP responses derive chart colors from `categories.color`, so the legacy transaction color no longer controls chart appearance. These tables have no user ownership or timestamps yet.
 
 Migration `0001` creates the initial financial tables and indexes without sample data. Migration `0002`:
 
@@ -38,6 +38,8 @@ Migration `0001` creates the initial financial tables and indexes without sample
 5. Replaces the old one-budget-per-month uniqueness with category/month/year uniqueness plus a partial unique index for overall budgets. Ordinary SQL uniqueness alone would permit multiple NULL categories, hence the extra index.
 
 No demo transactions are inserted. The registered transaction API now reads/writes these tables; the old sample router is unused. Budget spending is calculated from saved expenses for the category/month; an overall budget includes all categories. Category deletion is restricted while referenced, and deleting a budget does not delete its expenses.
+
+Migration `0003` adds a non-null category color with the `chart-blue-2` server default and `check_category_color` allowlist. It copies the earliest saved transaction color for each category if that color is one of the supported 17 `var(--chart-*-2)` values; otherwise it retains blue. It preserves every budget/transaction row, category name and foreign key. The migration freezes its own palette instead of importing mutable application configuration. No sample categories are inserted.
 
 ## Apply existing migrations
 
@@ -51,7 +53,7 @@ uv run alembic current
 uv run alembic check
 ```
 
-On the current schema, `current` reports `0002 (head)` and `check` reports `No new upgrade operations detected.` Both were verified against local PostgreSQL during category-budget integration. The existing budget was preserved; temporary API-verification rows were rolled back. Check your database again after changes or when using a different environment.
+On the current schema, `current` reports `0003 (head)` and `check` reports `No new upgrade operations detected.` Both were verified against local PostgreSQL during category-creator integration. Existing categories and financial rows were preserved; temporary API-verification rows were rolled back. Check your database again after changes or when using a different environment.
 
 `upgrade head` applies only pending revisions. The initial revision already exists; do not generate another "create budgets table" revision. `revision --autogenerate` compares an existing database with metadata and needs a reachable, up-to-date database.
 
@@ -103,6 +105,8 @@ This project's offline path still requires a valid PostgreSQL `DATABASE_URL` to 
 
 Inspect the revision's `downgrade()` and preserve needed data before considering rollback. Downgrading `0001` drops both financial tables and their contents.
 
+Downgrading `0003` drops only the category color column and its check, losing selected colors while retaining categories, budgets, transactions and their links. The new application requires this column, so coordinate any downgrade with an application rollback. Reapplying derives colors again from legacy transaction values/defaults; it cannot recover later Settings color choices automatically.
+
 Downgrading `0002` removes category links and the category table, turning any remaining category budget into a whole-month budget. Its online downgrade refuses to proceed when more than one budget exists for any month/year, because the old schema cannot represent those rows without losing data. Resolve that business decision explicitly after preserving data; never automatically delete budgets to make rollback succeed. The original transaction category capitalization/spacing is not restored. Offline SQL rendering cannot perform the data preflight, though database uniqueness still rejects incompatible rows. Prefer a forward corrective migration for populated environments.
 
 For a disposable development database only, the command to return to the previous revision is:
@@ -115,7 +119,7 @@ Do not use this as a routine troubleshooting step on a populated database. In sh
 
 ## Testing and diagnostics
 
-`tests/test_backend.py` contains 28 passing tests including migration upgrade/downgrade, existing-row preservation, category references, guarded downgrade and model comparison on isolated SQLite memory, plus PostgreSQL SQL rendering. SQLite expression-index reflection is limited, so separate live PostgreSQL `alembic check` and API verification were also performed. No migration is automatically applied when FastAPI starts.
+`tests/test_backend.py` contains 35 passing tests including color backfill/default/preservation/downgrade, database palette enforcement, category references, guarded downgrade and model comparison on isolated SQLite memory, plus PostgreSQL SQL rendering. SQLite expression-index reflection is limited, so separate live PostgreSQL `alembic check`, color-constraint inspection and API verification were also performed. No migration is automatically applied when FastAPI starts.
 
 | Error | What to check |
 | --- | --- |

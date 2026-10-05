@@ -35,6 +35,7 @@ import BudgetCategoryChart from "@/components/charts/budgetCategoryChart";
 
 import MonthlyHistory from "@/components/reports/monthlyHistory";
 import CategoryBreakdown from "@/components/reports/categoryBreakdown";
+import CategorySelect from "@/components/categories/categorySelect";
 
 type Transaction = {
   id: number;
@@ -48,7 +49,7 @@ type Transaction = {
 
 const Reports = () => {
   const [chartType, setChartType] = React.useState<"area" | "bar">("area");
-  const [category, setCategory] = useState("all");
+  const [category, setCategory] = useState<string | null>(null);
 
   const now = new Date();
 
@@ -312,35 +313,12 @@ const Reports = () => {
               <CardDescription>Current month</CardDescription>
 
               <CardAction>
-                <Select
-                  placeholder="Select Category"
-                  selectedKey={category}
-                  onSelectionChange={(key) => {
-                    setCategory(String(key));
-                  }}
-                >
-                  <SelectTrigger className="w-45">
-                    <SelectValue />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem id="all">All Categories</SelectItem>
-
-                      <SelectItem id="Groceries">Groceries</SelectItem>
-
-                      <SelectItem id="Dining">Dining</SelectItem>
-
-                      <SelectItem id="Entertainment">Entertainment</SelectItem>
-
-                      <SelectItem id="Transportation">
-                        Transportation
-                      </SelectItem>
-
-                      <SelectItem id="Shopping">Shopping</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                <CategorySelect
+                  value={category}
+                  onChange={setCategory}
+                  allowAll
+                  label="Weekly spending category"
+                />
               </CardAction>
             </CardHeader>
 

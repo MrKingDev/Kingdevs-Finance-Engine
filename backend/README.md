@@ -26,7 +26,7 @@ PostgreSQL now runs in this project's Docker container. FastAPI and Alembic run 
 | Database | `finance_engine` |
 | Database role | `finance_user` |
 | Persistent volume | `backend_finance_engine_postgres_data` |
-| Applied migration | `0002 (head)` |
+| Applied migration | `0003 (head)` |
 | Tables | `budgets`, `categories`, `transactions`, `alembic_version` |
 
 The separate `finance-engine-example` project retains its PostgreSQL container on port 5432. Its containers, credentials, and volume were left untouched.
@@ -76,10 +76,12 @@ The later category-budget change exposed a separate model error: the budget uniq
 | `migrations/env.py` | Connects Alembic to the same URL and model metadata used by the backend. |
 | `migrations/versions/0001_create_budgets_and_transactions.py` | Creates the first financial tables and their constraints. |
 | `migrations/versions/0002_category_budgets.py` | Adds shared categories, foreign keys, category budget uniqueness, and preserves existing data. |
-| `src/backend/services/categories.py` | Reuses category names regardless of capitalization/outer spaces and creates new categories when needed. |
+| `migrations/versions/0003_category_colors.py` | Adds validated category colors, preserving existing names, links and financial rows. |
+| `src/backend/category_colors.py` | Defines the 17 permitted tokens from the frontend's chart palette. |
+| `src/backend/services/categories.py` | Resolves saved category names regardless of capitalization/outer spaces; rejects unknown categories. |
 | `src/backend/routes/transactions.py` | Persists transaction CRUD; the old sample router is not registered. |
 | `src/backend/routes/budgets.py` | Persists budgets and computes spending from matching saved expenses. |
-| `src/backend/routes/categories.py` | Lists shared category names for both frontend forms. |
+| `src/backend/routes/categories.py` | Lists/creates categories, lists the chart palette and updates category colors. |
 | `src/backend/main.py` | Creates FastAPI and registers the routes. |
 
 ## Step 1: Understand the connection settings
@@ -151,13 +153,13 @@ uv run alembic check
 ```
 
 - `uv sync --locked` installs the declared Python dependencies at their locked versions.
-- `upgrade head` applies pending migration files. Revisions `0001` and `0002` have been applied locally; a fresh checkout needs both.
-- `current` should report `0002 (head)`.
+- `upgrade head` applies pending migration files. Revisions `0001` through `0003` have been applied locally; a fresh checkout needs all three.
+- `current` should report `0003 (head)`.
 - `check` should report `No new upgrade operations detected.`
 
 Docker creates the PostgreSQL server and database. Alembic creates the application's tables inside that database. SQLAlchemy models describe the desired schema but do not create it on their own.
 
-The initial migration creates `budgets` and `transactions`; `0002` adds shared `categories` and the budget/transaction references. Alembic records its revision in `alembic_version`. Existing budgets are preserved with `category = NULL`, keeping their original All categories scope. Existing transaction categories are backfilled and normalized; no demo transactions are inserted.
+The initial migration creates `budgets` and `transactions`; `0002` adds shared `categories` and the budget/transaction references; `0003` adds category chart colors. Alembic records its revision in `alembic_version`. Budgets that predate categories are preserved with `category = NULL`, keeping their original All categories scope. Existing transaction categories are backfilled and normalized by `0002`; no demo transactions are inserted.
 
 For a future model change, the workflow is:
 
@@ -198,6 +200,8 @@ Invoke-RestMethod http://127.0.0.1:8000/budgets
 
 ## Step 6: Link a category budget to expenses
 
+First create `Groceries` in **Settings → Categories**, or use `POST /categories` in Swagger with `{"name":"Groceries","color":"chart-emerald-2"}`. If it already exists, select it instead of creating a duplicate. Category and transaction/budget creation are now separate actions.
+
 Open `/docs`, expand `POST /budgets`, select **Try it out**, and send:
 
 ```json
@@ -209,7 +213,7 @@ Open `/docs`, expand `POST /budgets`, select **Try it out**, and send:
 }
 ```
 
-Expected status: **201 Created**. On an empty transaction table, the response includes a budget of `"400.00"`, spent of zero, remaining of `"400.00"`, and usage of `0.0`. PostgreSQL generates the ID; do not assume it starts at 1. `Groceries` is created automatically if it does not exist.
+Expected status: **201 Created**. On an empty transaction table, the response includes a budget of `"400.00"`, spent of zero, remaining of `"400.00"`, and usage of `0.0`. PostgreSQL generates the ID; do not assume it starts at 1. `Groceries` must already exist; otherwise the API returns 422.
 
 Next send `POST /transactions`:
 
@@ -271,7 +275,7 @@ Rules:
 
 Names must be nonblank and at most 100 characters. Invalid periods, nonpositive amounts, excess decimal places and amounts beyond `NUMERIC(12, 2)` return 422.
 
-In the UI, create a budget with **One category**, then select/type that same category when adding an expense. Choose the budget's month/year on Dashboard or Reports to see its progress. Both forms use `GET /categories` for suggestions. Budget and transaction lists refresh after frontend writes and when their window regains focus. External API edits appear on refresh/focus; there is no live push connection.
+In the UI, create a category in Settings, create a budget with **One category**, then select that same category when adding an expense. Choose the budget's month/year on Dashboard or Reports to see its progress. Both forms use saved-category dropdowns backed by `GET /categories`. Budget, category, pie-chart and transaction views refresh after frontend writes and when their window regains focus. External API edits appear on refresh/focus; there is no live push connection. Wish List and Paycheck Splitter retain their separate categories.
 
 ## Step 7: Inspect the database directly
 
@@ -286,7 +290,7 @@ At its SQL prompt:
 ```sql
 \dt
 SELECT version_num FROM alembic_version;
-SELECT name FROM categories ORDER BY name;
+SELECT name, color FROM categories ORDER BY name;
 SELECT id, category, month, year, amount FROM budgets;
 SELECT count(*) FROM transactions;
 \q
@@ -339,9 +343,12 @@ Paths are unversioned and unauthenticated; no `/api/v1` prefix or user isolation
 | --- | --- | --- |
 | GET | `/` | API welcome message. |
 | GET | `/health` | Process health only; no database query. |
-| GET | `/categories` | Returns shared names as `[{"name":"Groceries"}]`, sorted alphabetically. |
+| GET | `/categories` | Returns names/colors as `[{"name":"Groceries","color":"chart-emerald-2"}]`, sorted alphabetically. |
+| GET | `/categories/colors` | Returns allowed chart tokens and readable labels. |
+| POST | `/categories` | Creates a category, 201; duplicate name, 409; invalid name/color, 422. |
+| PATCH | `/categories/{name}` | Changes only the saved color; URL-encode names. Missing category, 404; invalid color, 422. |
 | GET | `/transactions` | Database transactions ordered by descending date/ID; no pagination or server filters. |
-| POST | `/transactions` | Saves a transaction and creates/reuses its category, 201. |
+| POST | `/transactions` | Saves a transaction using an existing category, 201; unknown category, 422. |
 | GET | `/transactions/{id}` | Reads one saved transaction, 200; missing ID, 404. |
 | PATCH | `/transactions/{id}` | Updates supplied fields; omitted fields unchanged, explicit null rejected. |
 | DELETE | `/transactions/{id}` | Deletes a transaction, 204; missing ID, 404. |
@@ -358,7 +365,7 @@ Paths are unversioned and unauthenticated; no `/api/v1` prefix or user isolation
 - There are no category rename/delete endpoints, account records, transaction pagination, recurring budgets, or edit forms yet. Remaining dashboard/report aggregates still run in the browser; budget aggregates run in the backend.
 - Authentication and ownership scoping are not implemented; these routes remain a local development feature.
 
-Valid transaction POST body:
+Valid transaction POST body (create `Dining` in Settings first):
 
 ```json
 {
@@ -367,12 +374,86 @@ Valid transaction POST body:
   "category": "Dining",
   "bank": "Chase",
   "type": "expense",
-  "amount": "4.50",
-  "pie-color": "var(--chart-orange-2)"
+  "amount": "4.50"
 }
 ```
 
-The schema accepts `pie-color` or `pie_color`; omitting it uses `var(--chart-1)`. Type must be lowercase `income` or `expense`; amount must be positive with at most two decimal places and fit `NUMERIC(12, 2)`. A valid POST saves the row and makes it available to transactions, analytics and matching budgets.
+Legacy `pie-color` or `pie_color` input is accepted but overridden with the category's color. The response always derives `pie-color` from the saved category. Type must be lowercase `income` or `expense`; amount must be positive with at most two decimal places and fit `NUMERIC(12, 2)`. A valid POST saves the row and makes it available to transactions, analytics and matching budgets.
+
+## How the Settings category creator is made
+
+The category is a shared record containing a **name** and a **chart color token**. Names remain the existing primary/foreign keys, so this feature does not reassign transactions or budgets. Creation happens explicitly in Settings; selecting a category elsewhere only references that saved record.
+
+```text
+Settings > Categories
+  name + palette color -> POST /categories -> categories(name, color)
+                                                  |
+                       GET /categories -----------+
+                        |             |            |
+                 Transaction       Budget      Report filter
+                   dropdown       dropdown       dropdown
+                        |
+                 saved transaction
+                        |
+                JOIN categories on name
+                        |
+             response pie-color = var(--saved-token)
+                        |
+               spending pie chart slice
+```
+
+### Backend pieces
+
+| File | Responsibility |
+| --- | --- |
+| `src/backend/category_colors.py` | A Literal allowlist of 17 `chart-*-2` tokens. They correspond to CSS variables already defined in `frontend/src/app/globals.css`. |
+| `src/backend/models/category.py` | Stores `name` and non-null `color VARCHAR(32)`; keeps case-insensitive name uniqueness and adds the database color CHECK. |
+| `src/backend/schemas/category.py` | Validates trimmed, nonblank names of at most 100 characters and only supported palette colors. |
+| `src/backend/routes/categories.py` | Handles listing, creation and color updates. Duplicate names return 409 rather than overwriting another category's color. `/categories/colors` supplies the frontend palette. |
+| `src/backend/services/categories.py` | Requires a saved category for transaction and category-budget writes; unknown names return 422 with a Settings instruction. Existing case/space normalization remains. |
+| `src/backend/models/transaction.py` | Eagerly loads the category relationship and exposes `category_chart_color`, avoiding one category query per transaction in list responses. |
+| `src/backend/schemas/transaction.py` | Serializes that derived color under the existing `pie-color` response key. |
+| `migrations/versions/0003_category_colors.py` | Adds the color column/check/default and backfills from the earliest transaction with a supported palette color; otherwise uses blue. Existing financial rows and links remain unchanged. |
+
+The color token is stored as `chart-emerald-2`, not arbitrary CSS or a hex string. The renderer wraps it as `var(--chart-emerald-2)`, so it uses the application's existing styling. Color labels are also shown in Settings; color alone is not the only way to distinguish options. Multiple categories may intentionally share a color.
+
+Transaction rows retain their legacy `pie_color` column for schema compatibility, but it is no longer authoritative. Reads join the current category color; writes fill the legacy column from that category and ignore a caller's color override. Thus changing a category color does not require rewriting every historical transaction. Renames/deletion remain outside this feature.
+
+### Frontend pieces
+
+| File (under `frontend/src/`) | Responsibility |
+| --- | --- |
+| `components/settings/pages/categories.tsx` | Category-name form, keyboard-accessible radio swatches, saved-category list, color updates, duplicate/error messages and success feedback. |
+| `components/settings/settingsPannel.tsx` | Mounts the creator in the Categories tab and supports `/settings#categories` links. |
+| `components/categories/categorySelect.tsx` | Shared dropdown with saved names, color dots, loading/error/empty states, retry and a link to Settings. Filters may also choose All categories. |
+| `app/budgets/page.tsx`, `app/transactions/page.tsx` | Use the shared selector instead of free-text category inputs. All categories budgets remain supported. |
+| `app/reports/page.tsx`, `components/charts/barChart2.tsx` | Weekly filter uses saved categories, with null representing All categories so a real category named `all` still works. |
+| `components/charts/pieChart.tsx` | Groups selected-month expenses and uses the category-derived response color for each slice; shows fetch errors and empty periods. |
+| `lib/use-finance-list.ts`, `lib/finance-api.ts` | Refetch mounted lists/charts after category or financial writes and on window focus. |
+
+Wish List and Paycheck Splitter deliberately retain their existing separate categories. The creator does not import or change those tool values.
+
+### Try the API
+
+Create a category:
+
+```http
+POST /categories
+Content-Type: application/json
+
+{"name":"Groceries","color":"chart-emerald-2"}
+```
+
+Recolor that category (including existing transaction responses):
+
+```http
+PATCH /categories/Groceries
+Content-Type: application/json
+
+{"color":"chart-orange-2"}
+```
+
+The database stores the new color; the next transaction read returns `"pie-color":"var(--chart-orange-2)"`. Refresh or focus an already-open chart to see the change. Budget spending still depends only on amount, category, type and date. No new packages are needed.
 
 ## Verification history and repeatable checks
 
@@ -393,6 +474,10 @@ During the category-budget integration:
 - A live PostgreSQL/API verification created two category budgets and an expense, checked category isolation, recategorized and deleted the expense, and checked duplicate conflicts and period filtering. Verification writes were rolled back; no demo data was retained.
 - All **28 regression tests passed**, including migration backfill/preservation, foreign keys, category normalization, date/type isolation, transaction edits/deletes and guarded downgrade.
 - Frontend typechecking still reports eight pre-existing errors in unrelated financial tools; the category-budget changes introduced no reported type errors. No browser end-to-end run is claimed.
+
+The Settings-category feature expands the suite to **35 passing tests**. Added cases cover category creation/duplicates, every palette token existing in CSS, invalid colors, unknown categories on create/update, recoloring historical transactions, special characters in names, the database color constraint, and migration preservation/downgrade. Migration `0003` and a live PostgreSQL category/color/budget flow were verified; existing data was preserved and temporary verification writes were rolled back. Frontend typechecking still reports the same eight unrelated tool errors.
+
+Scoped lint passed for all nine changed frontend files. The running frontend returned HTTP 200 for Settings, Budgets, Transactions and Reports; this verifies route rendering, not a full browser interaction test.
 
 Run the repeatable regression suite with:
 
