@@ -189,8 +189,10 @@ const Reports = () => {
 
               <SelectContent>
                 <SelectGroup>
-                  {Array.from({ length: 27 }, (_, index) => 2000 + index)
-                    .reverse()
+                  {[...new Set([
+                    ...Array.from({ length: Math.max(now.getFullYear() - 1999, 1) }, (_, index) => 2000 + index),
+                    ...transactions.map((transaction) => Number(transaction.date.slice(0, 4))),
+                  ])].sort((a, b) => b - a)
                     .map((year) => (
                       <SelectItem key={year} id={String(year)}>
                         {year}
@@ -249,7 +251,7 @@ const Reports = () => {
           {/* Spending By Category */}
           <Card className="min-w-0 overflow-hidden">
             <CardHeader>
-              <CardTitle>Spending by category</CardTitle>
+              <CardTitle>Spending by Category</CardTitle>
             </CardHeader>
 
             <CardContent className="min-w-0 overflow-hidden">
@@ -260,7 +262,8 @@ const Reports = () => {
           {/* Income vs Expenses */}
           <Card className="min-w-0 overflow-hidden">
             <CardHeader className="gap-4">
-              <CardTitle>Income vs expenses</CardTitle>
+              <CardTitle>Income vs Expenses</CardTitle>
+              <CardDescription>{selectedYear}</CardDescription>
 
               <CardAction>
                 <RadioGroup
@@ -295,9 +298,9 @@ const Reports = () => {
 
             <CardContent className="min-w-0 overflow-hidden">
               {chartType === "area" ? (
-                <AreaChartDisplay />
+                <AreaChartDisplay year={selectedYear} />
               ) : (
-                <BarChartDisplay />
+                <BarChartDisplay year={selectedYear} />
               )}
             </CardContent>
           </Card>
@@ -310,7 +313,7 @@ const Reports = () => {
             <CardHeader>
               <CardTitle>Weekly Spending</CardTitle>
 
-              <CardDescription>Current month</CardDescription>
+              <CardDescription>Current Month</CardDescription>
 
               <CardAction>
                 <CategorySelect

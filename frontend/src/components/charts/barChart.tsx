@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useIncomeExpenseChart } from "@/lib/use-income-expense-chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
@@ -11,22 +11,6 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-
-type Transaction = {
-  id: number;
-  date: string;
-  merchant: string;
-  category: string;
-  bank: string;
-  type: "income" | "expense";
-  amount: number;
-};
-
-type ChartData = {
-  date: string;
-  income: number;
-  expenses: number;
-};
 
 const incomeExpenseChartConfig = {
   income: {
@@ -39,63 +23,10 @@ const incomeExpenseChartConfig = {
   },
 } satisfies ChartConfig;
 
-const BarChartDisplay = () => {
-  const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [loading, setLoading] = useState(true);
+const BarChartDisplay = ({ year }: { year: number }) => {
+  const { data: chartData, loading, error } = useIncomeExpenseChart(year);
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/transactions`,
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch transactions");
-        }
-
-        const transactions: Transaction[] = await response.json();
-
-        const currentYear = new Date().getFullYear();
-
-        const monthlyData: ChartData[] = Array.from(
-          { length: 12 },
-          (_, index) => ({
-            date: `${currentYear}-${String(index + 1).padStart(2, "0")}-01`,
-            income: 0,
-            expenses: 0,
-          }),
-        );
-
-        transactions.forEach((transaction) => {
-          const [year, month] = transaction.date.split("-").map(Number);
-
-          if (year !== currentYear) {
-            return;
-          }
-
-          const monthIndex = month - 1;
-          const amount = Number(transaction.amount);
-
-          if (transaction.type === "income") {
-            monthlyData[monthIndex].income += amount;
-          }
-
-          if (transaction.type === "expense") {
-            monthlyData[monthIndex].expenses += amount;
-          }
-        });
-
-        setChartData(monthlyData);
-      } catch (error) {
-        console.error("Error fetching chart data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTransactions();
-  }, []);
+  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
 
   if (loading) {
     return (

@@ -1,7 +1,9 @@
+name: backend
+
 services:
   db:
     image: postgres:17
-    container_name: finance-engine-db
+    container_name: ${POSTGRES_CONTAINER_NAME:-finance-engine-db}
 
     restart: unless-stopped
 
@@ -11,7 +13,7 @@ services:
       POSTGRES_DB: finance_engine
 
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
 
     volumes:
       - finance_engine_postgres_data:/var/lib/postgresql/data
@@ -25,6 +27,51 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  migrate:
+    build: .
+    environment: &database_environment
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: finance_user
+      POSTGRES_DB: finance_engine
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in backend/.env}
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build: .
+    environment: *database_environment
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8001}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3001}:3001"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
 
 volumes:

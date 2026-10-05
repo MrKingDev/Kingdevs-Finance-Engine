@@ -39,8 +39,10 @@ import { Separator } from "@/components/ui/separator";
 import TransactionsTable from "@/components/transactions/transactionsTable";
 import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
 import CategorySelect from "@/components/categories/categorySelect";
+import { useFinanceList } from "@/lib/use-finance-list";
 
 const Transactions = () => {
+  const banks = useFinanceList<string>("/transactions/banks");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   // States
@@ -357,11 +359,7 @@ const Transactions = () => {
                   <SelectContent>
                     <SelectGroup>
                       <SelectItem id="all">All banks</SelectItem>
-                      <SelectItem id="Capital One">Capital One</SelectItem>
-                      <SelectItem id="Chase">Chase</SelectItem>
-                      <SelectItem id="Bank of America">
-                        Bank of America
-                      </SelectItem>
+                      {banks.data.map((name) => <SelectItem key={name} id={name}>{name}</SelectItem>)}
                     </SelectGroup>
                   </SelectContent>
                 </Select>

@@ -194,9 +194,9 @@ export default function CompoundInterest() {
           <Label>Compounding Frequency</Label>
 
           <Select
-            value={compoundFrequency}
-            onValueChange={(value) =>
-              setCompoundFrequency(value as CompoundFrequency)
+            selectedKey={compoundFrequency}
+            onSelectionChange={(value) =>
+              value !== null && setCompoundFrequency(String(value) as CompoundFrequency)
             }
           >
             <SelectTrigger className="w-full">
@@ -204,13 +204,13 @@ export default function CompoundInterest() {
             </SelectTrigger>
 
             <SelectContent>
-              <SelectItem value="1">Annually</SelectItem>
+              <SelectItem id="1">Annually</SelectItem>
 
-              <SelectItem value="4">Quarterly</SelectItem>
+              <SelectItem id="4">Quarterly</SelectItem>
 
-              <SelectItem value="12">Monthly</SelectItem>
+              <SelectItem id="12">Monthly</SelectItem>
 
-              <SelectItem value="365">Daily</SelectItem>
+              <SelectItem id="365">Daily</SelectItem>
             </SelectContent>
           </Select>
         </div>

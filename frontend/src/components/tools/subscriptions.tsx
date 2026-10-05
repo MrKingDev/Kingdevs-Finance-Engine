@@ -1,888 +1,281 @@
 "use client";
 
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
-
-import {
-  CalendarDays,
-  CreditCard,
-  DollarSign,
-  ImageIcon,
-  Plus,
-  RefreshCcw,
-  Trash2,
-  Upload,
-  X,
-} from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { Archive, CalendarDays, CreditCard, DollarSign, History, Pencil, Plus, RefreshCcw, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import CategorySelect from "@/components/categories/categorySelect";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePickerInput } from "@/components/ui/date-picker";
+import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
+import { useSubscriptions } from "@/lib/use-subscriptions";
+import type { SubscriptionPayment, SubscriptionResponse } from "@/types/api";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import {
-  Dialog,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
-import { DatePickerInput } from "@/components/ui/date-picker";
-
-// --------------------------------------------------
-// Types
-// --------------------------------------------------
-
-type BillingCycle = "Monthly" | "Annual";
-
-type SubscriptionStatus = "Paid" | "Overdue" | "Upcoming";
-
-type Subscription = {
-  id: number;
+type SubscriptionForm = {
   name: string;
+  amount: string;
+  billing_cycle: "monthly" | "annual";
+  next_due_date: string;
+  category: string | null;
+  payment_method_label: string;
   icon: string | null;
-  billingCycle: BillingCycle;
-  cost: number;
-  dueDate: string;
-  nextRenewal: string;
-  paymentMethod: string;
-  status: SubscriptionStatus;
 };
 
-// --------------------------------------------------
-// Starting Data
-// --------------------------------------------------
-
-const initialSubscriptions: Subscription[] = [
-  {
-    id: 1,
-    name: "Dashlane",
-    icon: null,
-    billingCycle: "Annual",
-    cost: 59.99,
-    dueDate: "2026-07-19",
-    nextRenewal: "2027-07-19",
-    paymentMethod: "CashApp",
-    status: "Overdue",
-  },
-  {
-    id: 2,
-    name: "Google",
-    icon: null,
-    billingCycle: "Monthly",
-    cost: 9.99,
-    dueDate: "2026-09-14",
-    nextRenewal: "2026-10-14",
-    paymentMethod: "Discover",
-    status: "Overdue",
-  },
-  {
-    id: 3,
-    name: "ChatGPT",
-    icon: null,
-    billingCycle: "Monthly",
-    cost: 22,
-    dueDate: "2026-09-13",
-    nextRenewal: "2026-10-13",
-    paymentMethod: "BofA",
-    status: "Overdue",
-  },
-  {
-    id: 4,
-    name: "Transit",
-    icon: null,
-    billingCycle: "Annual",
-    cost: 25,
-    dueDate: "2027-01-13",
-    nextRenewal: "2028-01-13",
-    paymentMethod: "CashApp",
-    status: "Paid",
-  },
-  {
-    id: 5,
-    name: "Claude",
-    icon: null,
-    billingCycle: "Monthly",
-    cost: 22,
-    dueDate: "2026-09-26",
-    nextRenewal: "2026-10-26",
-    paymentMethod: "BofA",
-    status: "Upcoming",
-  },
-];
-
-// --------------------------------------------------
-// Helpers
-// --------------------------------------------------
-
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+const emptyForm: SubscriptionForm = {
+  name: "", amount: "", billing_cycle: "monthly", next_due_date: "",
+  category: null, payment_method_label: "", icon: null,
 };
+const currency = (value: string) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value));
+const formatDate = (value: string) => new Intl.DateTimeFormat("en-US", {
+  month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
+}).format(new Date(value + "T00:00:00Z"));
+const statusLabels = { overdue: "Overdue", due_today: "Due today", upcoming: "Upcoming", archived: "Archived" };
 
-const formatDate = (date: string) => {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(`${date}T00:00:00`));
-};
-
-const getYearlyCost = (cost: number, billingCycle: BillingCycle) => {
-  if (billingCycle === "Monthly") {
-    return cost * 12;
-  }
-
-  return cost;
-};
-
-// --------------------------------------------------
-// Component
-// --------------------------------------------------
+async function request(path: string, method: string, body?: unknown) {
+  const response = await fetch(API_URL + "/subscriptions" + path, {
+    method,
+    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(await apiError(response, "Unable to save this change."));
+  return response.status === 204 ? null : response.json();
+}
 
 export default function SubscriptionTracker() {
-  const [subscriptions, setSubscriptions] =
-    useState<Subscription[]>(initialSubscriptions);
-
+  const [includeArchived, setIncludeArchived] = useState(false);
+  const { data, loading, error, refresh } = useSubscriptions(includeArchived);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<SubscriptionResponse | null>(null);
+  const [form, setForm] = useState<SubscriptionForm>(emptyForm);
+  const [formError, setFormError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [readingIcon, setReadingIcon] = useState(false);
+  const [paying, setPaying] = useState<SubscriptionResponse | null>(null);
+  const [payment, setPayment] = useState({ paid_on: "", amount: "" });
+  const [paymentError, setPaymentError] = useState("");
+  const [deleting, setDeleting] = useState<SubscriptionResponse | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [history, setHistory] = useState<{ name: string; payments: SubscriptionPayment[] } | null>(null);
+  const summary = data?.summary;
 
-  const [iconError, setIconError] = useState("");
+  function openForm(item?: SubscriptionResponse) {
+    setEditing(item ?? null);
+    setForm(item ? {
+      name: item.name, amount: item.amount, billing_cycle: item.billing_cycle,
+      next_due_date: item.next_due_date, category: item.category,
+      payment_method_label: item.payment_method_label ?? "", icon: item.icon,
+    } : { ...emptyForm });
+    setFormError("");
+    setDialogOpen(true);
+  }
 
-  const iconInputRef = useRef<HTMLInputElement>(null);
-
-  const [form, setForm] = useState({
-    name: "",
-
-    icon: null as string | null,
-
-    billingCycle: "Monthly" as BillingCycle,
-
-    cost: "",
-    dueDate: "",
-    nextRenewal: "",
-    paymentMethod: "",
-  });
-
-  // --------------------------------------------------
-  // Calculations
-  // --------------------------------------------------
-
-  const yearlyTotal = useMemo(() => {
-    return subscriptions.reduce((total, subscription) => {
-      return (
-        total + getYearlyCost(subscription.cost, subscription.billingCycle)
-      );
-    }, 0);
-  }, [subscriptions]);
-
-  const monthlyAverage = yearlyTotal / 12;
-
-  const overduePayments = subscriptions.filter(
-    (subscription) => subscription.status === "Overdue",
-  ).length;
-
-  const upcomingPayments = subscriptions.filter(
-    (subscription) => subscription.status === "Upcoming",
-  ).length;
-
-  // --------------------------------------------------
-  // Icon Upload
-  // --------------------------------------------------
-
-  const handleIconUpload = (event: ChangeEvent<HTMLInputElement>) => {
+  function uploadIcon(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-
-    if (!file) {
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      setFormError("Choose a PNG, JPEG, or WebP icon no larger than 2 MiB.");
+      event.target.value = "";
       return;
     }
-
-    setIconError("");
-
-    // Only allow images
-    if (!file.type.startsWith("image/")) {
-      setIconError("Please upload an image file.");
-
-      return;
-    }
-
-    // Maximum 2 MB
-    const maxSize = 2 * 1024 * 1024;
-
-    if (file.size > maxSize) {
-      setIconError("Icon must be smaller than 2 MB.");
-
-      return;
-    }
-
+    setFormError("");
+    setReadingIcon(true);
     const reader = new FileReader();
-
     reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setForm((current) => ({
-          ...current,
-          icon: reader.result as string,
-        }));
-      }
+      if (typeof reader.result === "string") setForm((current) => ({ ...current, icon: reader.result as string }));
     };
-
+    reader.onerror = () => setFormError("Could not read this icon. Choose another image.");
+    reader.onloadend = () => setReadingIcon(false);
     reader.readAsDataURL(file);
-  };
+  }
 
-  const removeIcon = () => {
-    setForm((current) => ({
-      ...current,
-      icon: null,
-    }));
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || readingIcon) return;
+    if (!form.next_due_date) { setFormError("Choose the next due date."); return; }
+    setBusy(true);
+    setFormError("");
+    try {
+      await request(editing ? "/" + editing.id : "", editing ? "PATCH" : "POST", {
+        ...form, name: form.name.trim(), payment_method_label: form.payment_method_label.trim() || null,
+      });
+      setDialogOpen(false);
+      notifyFinanceChanged();
+      toast.success(editing ? "Subscription updated" : "Subscription saved");
+    } catch (failure) {
+      setFormError(failure instanceof Error ? failure.message : "Unable to save subscription.");
+    } finally { setBusy(false); }
+  }
 
-    setIconError("");
+  async function archive(item: SubscriptionResponse) {
+    setBusy(true);
+    try {
+      await request("/" + item.id, "PATCH", { is_active: !item.is_active });
+      notifyFinanceChanged();
+      toast.success(item.is_active ? "Subscription archived" : "Subscription restored");
+    } catch (failure) { toast.error(failure instanceof Error ? failure.message : "Unable to update subscription."); }
+    finally { setBusy(false); }
+  }
 
-    if (iconInputRef.current) {
-      iconInputRef.current.value = "";
-    }
-  };
+  async function remove() {
+    if (!deleting || busy) return;
+    setBusy(true);
+    setDeleteError("");
+    try {
+      await request("/" + deleting.id, "DELETE");
+      setDeleting(null);
+      notifyFinanceChanged();
+      toast.success("Subscription deleted");
+    } catch (failure) { setDeleteError(failure instanceof Error ? failure.message : "Unable to delete subscription."); }
+    finally { setBusy(false); }
+  }
 
-  // --------------------------------------------------
-  // Status
-  // --------------------------------------------------
+  async function recordPayment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!paying || busy) return;
+    setBusy(true);
+    setPaymentError("");
+    try {
+      // Preserve the selected occurrence across retries, even if another request succeeded.
+      await request("/" + paying.id + "/payments", "POST", { ...payment, due_date: paying.next_due_date });
+      setPaying(null);
+      notifyFinanceChanged();
+      toast.success("Payment recorded and next due date updated");
+    } catch (failure) { setPaymentError(failure instanceof Error ? failure.message : "Unable to record payment."); }
+    finally { setBusy(false); }
+  }
 
-  const getStatus = (status: SubscriptionStatus) => {
-    if (status === "Paid") {
-      return (
-        <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-sm bg-emerald-500" />
-
-          <span className="font-medium text-emerald-500">Paid</span>
-        </div>
-      );
-    }
-
-    if (status === "Overdue") {
-      return (
-        <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-sm bg-red-500" />
-
-          <span className="font-medium text-red-500">Overdue</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center gap-2">
-        <span className="size-2.5 rounded-sm bg-yellow-500" />
-
-        <span className="font-medium text-yellow-500">Upcoming</span>
-      </div>
-    );
-  };
-
-  // --------------------------------------------------
-  // Add Subscription
-  // --------------------------------------------------
-
-  const handleAddSubscription = () => {
-    if (!form.name.trim() || !form.cost || !form.dueDate || !form.nextRenewal) {
-      return;
-    }
-
-    const cost = Number(form.cost);
-
-    if (Number.isNaN(cost) || cost <= 0) {
-      return;
-    }
-
-    const today = new Date();
-
-    today.setHours(0, 0, 0, 0);
-
-    const dueDate = new Date(`${form.dueDate}T00:00:00`);
-
-    const status: SubscriptionStatus = dueDate < today ? "Overdue" : "Upcoming";
-
-    const newSubscription: Subscription = {
-      id: Date.now(),
-
-      name: form.name.trim(),
-
-      icon: form.icon,
-
-      billingCycle: form.billingCycle,
-
-      cost,
-
-      dueDate: form.dueDate,
-
-      nextRenewal: form.nextRenewal,
-
-      paymentMethod: form.paymentMethod.trim() || "Not Set",
-
-      status,
-    };
-
-    setSubscriptions((current) => [...current, newSubscription]);
-
-    setForm({
-      name: "",
-      icon: null,
-      billingCycle: "Monthly",
-      cost: "",
-      dueDate: "",
-      nextRenewal: "",
-      paymentMethod: "",
-    });
-
-    setIconError("");
-
-    if (iconInputRef.current) {
-      iconInputRef.current.value = "";
-    }
-
-    setDialogOpen(false);
-  };
-
-  // --------------------------------------------------
-  // Delete
-  // --------------------------------------------------
-
-  const handleDelete = (id: number) => {
-    setSubscriptions((current) =>
-      current.filter((subscription) => subscription.id !== id),
-    );
-  };
-
-  // --------------------------------------------------
-  // Mark Paid
-  // --------------------------------------------------
-
-  const markAsPaid = (id: number) => {
-    setSubscriptions((current) =>
-      current.map((subscription) => {
-        if (subscription.id !== id) {
-          return subscription;
-        }
-
-        return {
-          ...subscription,
-          status: "Paid" as const,
-        };
-      }),
-    );
-  };
-
-  // --------------------------------------------------
-  // UI
-  // --------------------------------------------------
+  async function showHistory(item: SubscriptionResponse) {
+    setBusy(true);
+    try {
+      const payments: SubscriptionPayment[] = await request("/" + item.id + "/payments", "GET");
+      setHistory({ name: item.name, payments });
+    } catch (failure) { toast.error(failure instanceof Error ? failure.message : "Unable to load payment history."); }
+    finally { setBusy(false); }
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Subscriptions
-          </h1>
-
-          <p className="text-sm text-muted-foreground">
-            Track your subscriptions and recurring expenses.
-          </p>
+          <h2 className="text-2xl font-semibold">Subscriptions</h2>
+          <p className="text-sm text-muted-foreground">Track recurring costs, due dates, and recorded payments.</p>
         </div>
-
-        {/* Add Subscription Dialog */}
-
-        <DialogTrigger isOpen={dialogOpen} onOpenChange={setDialogOpen}>
-          <Button>
-            <Plus data-icon="inline-start" className="size-4" />
-            Add Subscription
-          </Button>
-
-          <Dialog className="sm:max-w-[540px]">
-            <DialogHeader>
-              <DialogTitle>Add Subscription</DialogTitle>
-
-              <DialogDescription>
-                Add a recurring subscription to your tracker.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-5 py-4">
-              {/* -------------------------------- */}
-              {/* Icon Upload */}
-              {/* -------------------------------- */}
-
-              <div className="grid gap-2">
-                <Label>Subscription Icon</Label>
-
-                <div className="flex items-center gap-4">
-                  {/* Preview */}
-
-                  <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted">
-                    {form.icon ? (
-                      <img
-                        src={form.icon}
-                        alt="Subscription icon preview"
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      <ImageIcon className="size-6 text-muted-foreground" />
-                    )}
-                  </div>
-
-                  {/* Actions */}
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      ref={iconInputRef}
-                      id="subscription-icon"
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                      className="hidden"
-                      onChange={handleIconUpload}
-                    />
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onPress={() => iconInputRef.current?.click()}
-                    >
-                      <Upload className="size-4" />
-
-                      {form.icon ? "Change Icon" : "Upload Icon"}
-                    </Button>
-
-                    {form.icon && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Remove icon"
-                        onPress={removeIcon}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  PNG, JPG, WEBP or SVG. Maximum 2 MB.
-                </p>
-
-                {iconError && (
-                  <p className="text-xs text-destructive">{iconError}</p>
-                )}
-              </div>
-
-              {/* -------------------------------- */}
-              {/* Name */}
-              {/* -------------------------------- */}
-
-              <div className="grid gap-2">
-                <Label htmlFor="subscription-name">Name</Label>
-
-                <Input
-                  id="subscription-name"
-                  placeholder="Netflix"
-                  value={form.name}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-
-                      name: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              {/* -------------------------------- */}
-              {/* Billing / Cost */}
-              {/* -------------------------------- */}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label>Billing Cycle</Label>
-
-                  <Select
-                    selectedKey={form.billingCycle}
-                    onSelectionChange={(key) =>
-                      setForm((current) => ({
-                        ...current,
-
-                        billingCycle: String(key) as BillingCycle,
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      <SelectItem id="Monthly">Monthly</SelectItem>
-
-                      <SelectItem id="Annual">Annual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="subscription-cost">Cost</Label>
-
-                  <Input
-                    id="subscription-cost"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="9.99"
-                    value={form.cost}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-
-                        cost: event.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* -------------------------------- */}
-              {/* Dates */}
-              {/* -------------------------------- */}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="subscription-due">Due Date</Label>
-
-                  <DatePickerInput
-                    id="subscription-due"
-                    value={form.dueDate}
-                    placeholder="Select due date"
-                    onChange={(date) =>
-                      setForm((current) => ({
-                        ...current,
-
-                        dueDate: date,
-                      }))
-                    }
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="subscription-renewal">Renewal Date</Label>
-
-                  <DatePickerInput
-                    id="subscription-renewal"
-                    value={form.nextRenewal}
-                    placeholder="Select renewal date"
-                    onChange={(date) =>
-                      setForm((current) => ({
-                        ...current,
-
-                        nextRenewal: date,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* -------------------------------- */}
-              {/* Payment */}
-              {/* -------------------------------- */}
-
-              <div className="grid gap-2">
-                <Label htmlFor="payment-method">Payment Method</Label>
-
-                <Input
-                  id="payment-method"
-                  placeholder="Discover"
-                  value={form.paymentMethod}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-
-                      paymentMethod: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onPress={() => setDialogOpen(false)}>
-                Cancel
-              </Button>
-
-              <Button onPress={handleAddSubscription}>Add Subscription</Button>
-            </DialogFooter>
-          </Dialog>
-        </DialogTrigger>
+        <Button onPress={() => openForm()} isDisabled={busy}><Plus className="size-4" />Add Subscription</Button>
       </div>
 
-      {/* -------------------------------- */}
-      {/* Stats */}
-      {/* -------------------------------- */}
-
+      {error && <div role="alert" className="flex items-center gap-3 text-sm text-destructive">{error}<Button variant="outline" onPress={refresh}>Retry</Button></div>}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Subscriptions</CardTitle>
-
-            <RefreshCcw className="size-4 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-2xl font-bold">{subscriptions.length}</div>
-
-            <p className="text-xs text-muted-foreground">
-              Recurring subscriptions
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Monthly Average
-            </CardTitle>
-
-            <DollarSign className="size-4 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(monthlyAverage)}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Average monthly cost
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Yearly Cost</CardTitle>
-
-            <CalendarDays className="size-4 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(yearlyTotal)}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Estimated yearly cost
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Needs Attention
-            </CardTitle>
-
-            <CreditCard className="size-4 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-2xl font-bold">{overduePayments}</div>
-
-            <p className="text-xs text-muted-foreground">
-              {upcomingPayments} upcoming
-            </p>
-          </CardContent>
-        </Card>
+        {[
+          { title: "Active subscriptions", value: summary?.active_count, note: "Saved recurring subscriptions", Icon: RefreshCcw },
+          { title: "Monthly average", value: summary ? currency(summary.monthly_average) : undefined, note: "Estimated at current prices", Icon: DollarSign },
+          { title: "Yearly estimate", value: summary ? currency(summary.yearly_cost) : undefined, note: "Active subscriptions only", Icon: CalendarDays },
+          { title: "Overdue", value: summary?.overdue_count, note: summary ? summary.due_today_count + " due today · " + summary.upcoming_count + " upcoming" : "Checking due dates", Icon: CreditCard },
+        ].map(({ title, value, note, Icon }) => (
+          <Card key={title}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium">{title}</CardTitle><Icon className="size-4 text-muted-foreground" /></CardHeader>
+            <CardContent><div className="text-2xl font-bold">{value ?? "—"}</div><p className="text-xs text-muted-foreground">{note}</p></CardContent>
+          </Card>
+        ))}
       </div>
-
-      {/* -------------------------------- */}
-      {/* Subscription Table */}
-      {/* -------------------------------- */}
 
       <Card>
         <CardHeader>
           <CardTitle>Subscription Tracker</CardTitle>
-
-          <CardDescription>
-            Manage recurring subscriptions and renewal dates.
-          </CardDescription>
+          <CardDescription>Estimates are separate from actual spending in Transactions. Due status uses the current UTC date.</CardDescription>
+          <Button size="sm" variant={includeArchived ? "secondary" : "outline"} className="w-fit" aria-pressed={includeArchived} onPress={() => setIncludeArchived((value) => !value)}>Show archived subscriptions</Button>
         </CardHeader>
-
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-sm">
-              <thead className="border-y bg-muted/30">
-                <tr className="text-left text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Name</th>
-
-                  <th className="px-4 py-3 font-medium">Billing</th>
-
-                  <th className="px-4 py-3 font-medium">Cost</th>
-
-                  <th className="px-4 py-3 font-medium">Due</th>
-
-                  <th className="px-4 py-3 font-medium">Yearly Cost</th>
-
-                  <th className="px-4 py-3 font-medium">Next Renewal</th>
-
-                  <th className="px-4 py-3 font-medium">Pay</th>
-
-                  <th className="px-4 py-3 font-medium">Card / Payment</th>
-
-                  <th className="w-[60px] px-4 py-3" />
-                </tr>
-              </thead>
-
-              <tbody>
-                {subscriptions.map((subscription) => {
-                  const yearlyCost = getYearlyCost(
-                    subscription.cost,
-                    subscription.billingCycle,
-                  );
-
-                  return (
-                    <tr
-                      key={subscription.id}
-                      className="border-b transition-colors hover:bg-muted/30"
-                    >
-                      {/* Name + Icon */}
-
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted">
-                            {subscription.icon ? (
-                              <img
-                                src={subscription.icon}
-                                alt={`${subscription.name} icon`}
-                                className="size-full object-cover"
-                              />
-                            ) : (
-                              <span className="font-semibold">
-                                {subscription.name.charAt(0).toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-
-                          <span className="font-medium">
-                            {subscription.name}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Billing */}
-
-                      <td className="px-4 py-3">
-                        <Badge variant="secondary">
-                          {subscription.billingCycle}
-                        </Badge>
-                      </td>
-
-                      {/* Cost */}
-
-                      <td className="px-4 py-3 font-medium">
-                        {formatCurrency(subscription.cost)}
-                      </td>
-
-                      {/* Due */}
-
-                      <td className="px-4 py-3">
-                        <div className="space-y-1">
-                          {getStatus(subscription.status)}
-
-                          <div className="text-xs text-muted-foreground">
-                            {formatDate(subscription.dueDate)}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Yearly */}
-
-                      <td className="px-4 py-3 font-medium">
-                        {formatCurrency(yearlyCost)}
-                      </td>
-
-                      {/* Renewal */}
-
-                      <td className="px-4 py-3">
-                        {formatDate(subscription.nextRenewal)}
-                      </td>
-
-                      {/* Pay */}
-
-                      <td className="px-4 py-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          isDisabled={subscription.status === "Paid"}
-                          onPress={() => markAsPaid(subscription.id)}
-                        >
-                          {subscription.status === "Paid" ? "Paid" : "Pay"}
-                        </Button>
-                      </td>
-
-                      {/* Payment */}
-
-                      <td className="px-4 py-3">
-                        <Badge variant="outline" className="font-normal">
-                          {subscription.paymentMethod}
-                        </Badge>
-                      </td>
-
-                      {/* Delete */}
-
-                      <td className="px-4 py-3">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          aria-label={`Delete ${subscription.name}`}
-                          onPress={() => handleDelete(subscription.id)}
-                        >
-                          <Trash2 className="size-4 text-muted-foreground" />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            {/* Empty State */}
-
-            {subscriptions.length === 0 && (
-              <div className="flex min-h-40 items-center justify-center">
-                <div className="text-center">
-                  <p className="font-medium">No subscriptions</p>
-
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Add your first subscription to start tracking recurring
-                    expenses.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+        <CardContent>
+          {loading && <p role="status" className="mb-3 text-sm text-muted-foreground">Loading subscriptions…</p>}
+          <Table aria-label="Saved subscriptions" className="min-w-[1000px]">
+            <TableHeader>
+              <TableHead isRowHeader>Name</TableHead><TableHead>Cost</TableHead><TableHead>Category</TableHead>
+              <TableHead>Next due</TableHead><TableHead>Yearly estimate</TableHead><TableHead>Payment method</TableHead><TableHead>Actions</TableHead>
+            </TableHeader>
+            <TableBody items={data?.items ?? []} renderEmptyState={() => loading ? "Loading…" : error ? "Subscriptions could not be loaded." : "No subscriptions yet. Add your first subscription to get started."}>
+              {(item) => (
+                <TableRow id={item.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted">
+                        {item.icon ? <img src={item.icon} alt="" className="size-full object-cover" /> : item.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div><div className="font-medium">{item.name}</div>{item.last_paid_on && <p className="text-xs text-muted-foreground">Last paid {formatDate(item.last_paid_on)}</p>}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{currency(item.amount)}<p className="text-xs text-muted-foreground">{item.billing_cycle === "monthly" ? "Monthly" : "Annual"}</p></TableCell>
+                  <TableCell>{item.category ?? "Uncategorized"}</TableCell>
+                  <TableCell><Badge variant={item.next_bill_status === "overdue" ? "destructive" : "secondary"}>{statusLabels[item.next_bill_status]}</Badge><p className="mt-1 text-xs">{formatDate(item.next_due_date)}</p></TableCell>
+                  <TableCell>{currency(item.yearly_cost)}</TableCell>
+                  <TableCell>{item.payment_method_label ?? "Not set"}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      {item.is_active && <Button size="sm" variant="outline" isDisabled={busy} onPress={() => {
+                        setPaying(item); setPayment({ amount: item.amount, paid_on: summary?.as_of_date ?? new Date().toISOString().slice(0, 10) }); setPaymentError("");
+                      }}>Record payment</Button>}
+                      <Button size="icon-sm" variant="ghost" aria-label={"Edit " + item.name} isDisabled={busy} onPress={() => openForm(item)}><Pencil className="size-4" /></Button>
+                      <Button size="icon-sm" variant="ghost" aria-label={"Payment history for " + item.name} isDisabled={busy} onPress={() => showHistory(item)}><History className="size-4" /></Button>
+                      <Button size="icon-sm" variant="ghost" aria-label={(item.is_active ? "Archive " : "Restore ") + item.name} isDisabled={busy} onPress={() => archive(item)}><Archive className="size-4" /></Button>
+                      {item.payment_count === 0 && <Button size="icon-sm" variant="ghost" aria-label={"Delete " + item.name} isDisabled={busy} onPress={() => { setDeleting(item); setDeleteError(""); }}><Trash2 className="size-4 text-destructive" /></Button>}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
+
+      <Dialog isOpen={dialogOpen} onOpenChange={(open) => { if (!busy && !readingIcon) setDialogOpen(open); }} isDismissable={!busy && !readingIcon} showCloseButton={!busy && !readingIcon} className="max-h-[90dvh] overflow-y-auto sm:max-w-[540px]">
+        <DialogHeader><DialogTitle>{editing ? "Edit Subscription" : "Add Subscription"}</DialogTitle><DialogDescription>Enter the price per billing period and the next unpaid due date.</DialogDescription></DialogHeader>
+        <form onSubmit={save} className="space-y-4">
+          <div className="space-y-2"><Label htmlFor="subscription-name">Name</Label><Input id="subscription-name" required maxLength={120} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Music service" /></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2"><Label htmlFor="subscription-amount">Amount (USD)</Label><Input id="subscription-amount" required type="number" min="0.01" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></div>
+            <Select aria-label="Billing cycle" className="w-full" selectedKey={form.billing_cycle} onSelectionChange={(key) => { if (key === "monthly" || key === "annual") setForm({ ...form, billing_cycle: key }); }}>
+              <Label>Billing cycle</Label><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem id="monthly">Monthly</SelectItem><SelectItem id="annual">Annual</SelectItem></SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2"><Label htmlFor="subscription-due-input">Next due date</Label><DatePickerInput id="subscription-due" value={form.next_due_date} onChange={(date) => setForm({ ...form, next_due_date: date })} /></div>
+          <div className="space-y-2"><CategorySelect value={form.category} onChange={(category) => setForm({ ...form, category })} />{form.category && <Button type="button" size="sm" variant="ghost" onPress={() => setForm({ ...form, category: null })}>Clear category</Button>}</div>
+          <div className="space-y-2"><Label htmlFor="subscription-method">Payment method nickname (optional)</Label><Input id="subscription-method" maxLength={100} value={form.payment_method_label} onChange={(e) => setForm({ ...form, payment_method_label: e.target.value })} placeholder="Discover" /></div>
+          <div className="space-y-2"><Label htmlFor="subscription-icon">Icon (optional, up to 2 MiB)</Label><Input id="subscription-icon" type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadIcon} disabled={readingIcon || busy} />
+            {form.icon && <div className="flex items-center gap-3"><img src={form.icon} alt="Icon preview" className="size-10 rounded-lg object-cover" /><Button type="button" size="sm" variant="ghost" onPress={() => setForm({ ...form, icon: null })}>Remove icon</Button></div>}
+          </div>
+          {formError && <p role="alert" className="text-sm text-destructive">{formError}</p>}
+          <DialogFooter><Button type="button" variant="outline" isDisabled={busy || readingIcon} onPress={() => setDialogOpen(false)}>Cancel</Button><Button type="submit" isDisabled={busy || readingIcon}>{busy ? "Saving…" : "Save Subscription"}</Button></DialogFooter>
+        </form>
+      </Dialog>
+
+      <Dialog isOpen={!!paying} onOpenChange={(open) => { if (!open && !busy) setPaying(null); }} isDismissable={!busy} showCloseButton={!busy}>
+        <DialogHeader><DialogTitle>Record payment</DialogTitle><DialogDescription>{paying?.name} · Due {paying ? formatDate(paying.next_due_date) : ""}. This records a payment you made; it does not charge your card or add an expense to Transactions.</DialogDescription></DialogHeader>
+        <form onSubmit={recordPayment} className="space-y-4">
+          <div className="space-y-2"><Label htmlFor="subscription-paid-on">Paid on (UTC date)</Label><Input id="subscription-paid-on" type="date" required max={summary?.as_of_date} value={payment.paid_on} onChange={(e) => setPayment({ ...payment, paid_on: e.target.value })} /></div>
+          <div className="space-y-2"><Label htmlFor="subscription-paid-amount">Amount paid (USD)</Label><Input id="subscription-paid-amount" type="number" required min="0.01" step="0.01" value={payment.amount} onChange={(e) => setPayment({ ...payment, amount: e.target.value })} /></div>
+          {paymentError && <p role="alert" className="text-sm text-destructive">{paymentError}</p>}
+          <DialogFooter><Button type="button" variant="outline" isDisabled={busy} onPress={() => setPaying(null)}>Cancel</Button><Button type="submit" isDisabled={busy}>{busy ? "Saving…" : "Confirm payment"}</Button></DialogFooter>
+        </form>
+      </Dialog>
+
+      <Dialog isOpen={!!deleting} onOpenChange={(open) => { if (!open && !busy) setDeleting(null); }} isDismissable={!busy} showCloseButton={!busy}>
+        <DialogHeader><DialogTitle>Delete subscription?</DialogTitle><DialogDescription>Remove {deleting?.name} from your saved subscriptions. This does not cancel the service with its provider.</DialogDescription></DialogHeader>
+        {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
+        <DialogFooter><Button variant="outline" isDisabled={busy} onPress={() => setDeleting(null)}>Cancel</Button><Button variant="destructive" isDisabled={busy} onPress={remove}>{busy ? "Deleting…" : "Delete subscription"}</Button></DialogFooter>
+      </Dialog>
+
+      <Dialog isOpen={!!history} onOpenChange={(open) => { if (!open) setHistory(null); }}>
+        <DialogHeader><DialogTitle>Payment history</DialogTitle><DialogDescription>{history?.name}</DialogDescription></DialogHeader>
+        <div className="max-h-80 space-y-3 overflow-y-auto">
+          {history?.payments.length === 0 && <p className="text-sm text-muted-foreground">No recorded payments yet.</p>}
+          {history?.payments.map((entry) => <div key={entry.id} className="flex justify-between gap-4 rounded-lg border p-3"><div><p className="text-sm">Paid {formatDate(entry.paid_on)}</p><p className="text-xs text-muted-foreground">Bill due {formatDate(entry.due_date)}</p></div><span className="font-medium">{currency(entry.amount)}</span></div>)}
+        </div>
+      </Dialog>
     </div>
   );
 }

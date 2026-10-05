@@ -21,6 +21,22 @@ class DatabaseConfigurationError(RuntimeError):
 def get_database_url() -> URL:
     """Read configuration without connecting or changing the process environment."""
     raw_url = os.environ.get("DATABASE_URL")
+    if raw_url is None and os.environ.get("POSTGRES_HOST"):
+        # Compose passes components separately so reserved password characters stay safe.
+        password = os.environ.get("POSTGRES_PASSWORD")
+        if not password:
+            raise DatabaseConfigurationError("POSTGRES_PASSWORD is not configured.")
+        try:
+            port = int(os.environ.get("POSTGRES_PORT", "5432"))
+            if not 1 <= port <= 65535:
+                raise ValueError
+        except ValueError:
+            raise DatabaseConfigurationError("POSTGRES_PORT must be a valid port number.") from None
+        return URL.create(
+            "postgresql+psycopg", username=os.environ.get("POSTGRES_USER", "finance_user"),
+            password=password, host=os.environ["POSTGRES_HOST"], port=port,
+            database=os.environ.get("POSTGRES_DB", "finance_engine"),
+        )
     if raw_url is None:
         raw_url = dotenv_values(ENV_FILE).get("DATABASE_URL")
     if not raw_url or not raw_url.strip():

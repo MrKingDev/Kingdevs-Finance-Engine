@@ -1,88 +1,64 @@
-# Finance Engine database migrations
+# Alembic migrations
 
-Alembic manages the PostgreSQL schema used by the backend. Run commands below from `backend/`, not from `backend/migrations/`.
+Alembic is the source of truth for the PostgreSQL schema. Current head: **0005**. Downloads, sample fixtures, CSV batching and transaction pagination do not require new financial tables.
 
-See the [backend setup guide](../README.md) for Docker, credentials and troubleshooting, and the [project README](../../README.md) for the full application.
+Commands in this guide run from `backend/`. Configure `.env` using the [backend setup instructions](../README.md#run-locally) before connecting to a database. Installing Python dependencies does not create tables; `alembic upgrade head` applies the checked-in revisions.
 
-## Configuration
+## Connection and metadata
 
-- `../alembic.ini` points to this directory and adds the backend's `src` directory to Python's import path.
-- `env.py` imports `backend.models`, registering Budget, Category and Transaction on the shared `backend.database.base.Base.metadata`.
-- Online migrations use SQLAlchemy with the Psycopg PostgreSQL driver. Offline SQL rendering uses the same URL and metadata without connecting.
-- The URL comes from process-level `DATABASE_URL`, otherwise `backend/.env`. An explicitly blank process value overrides the file.
-- No password is stored in `alembic.ini`. The backend and migrations share configuration loading in `src/backend/database/database.py`.
+`env.py` imports the shared `Base` and `backend.models` to register all models. It uses the API's database configuration. Tests can supply an isolated connection with `config.attributes["connection"]`.
 
-Local development uses PostgreSQL 17 in service `db`, container `finance-engine-db`, with database `finance_engine` and role `finance_user`. Windows clients use `127.0.0.1:5433`; PostgreSQL listens on port 5432 inside the container. Port 5432 on Windows belongs to the separate example project.
+Normal development uses PostgreSQL on host port 5433; containers use `db:5432`. See [backend configuration](../README.md#configuration-and-structure).
 
-For a fresh checkout, configure `backend/.env` as described in the backend guide. Preserve an existing configured password. The SQLAlchemy URL must use `postgresql+psycopg://` (plain `postgresql://` is normalized by the loader).
+## Revision history
 
-## Current revision
+| Revision | Change | Existing data |
+| --- | --- | --- |
+| 0001 | Initial transactions and budgets, constraints and indexes. | No sample financial data. |
+| 0002 | Shared categories, foreign keys, category budgets and overall-budget uniqueness. | Normalizes/backfills category names; existing overall budgets retain their scope. |
+| 0003 | Category color field and allowlist. | Uses supported legacy colors where available, otherwise blue. |
+| 0004 | Persistent CSV description rules. | Seeds six editable direction rules, without changing financial rows. |
+| 0005 | Subscriptions and payment history. | Adds tables/constraints/indexes without sample records. |
 
-The current head is `0003`, defined in [0003_category_colors.py](versions/0003_category_colors.py). Its parent is [0002_category_budgets.py](versions/0002_category_budgets.py), following [0001_create_budgets_and_transactions.py](versions/0001_create_budgets_and_transactions.py). Earlier revisions remain unchanged.
+Tables: `transactions`, `categories`, `budgets`, `transaction_rules`, `subscriptions`, `subscription_payments`, and `alembic_version`.
 
-| Table | Columns and constraints |
-| --- | --- |
-| `categories` | `name VARCHAR(100)` primary key, nonblank check; unique index on `lower(name)` prevents case variants. Required `color VARCHAR(32)`, server default `chart-blue-2`, CHECK limited to 17 supported chart tokens. |
-| `budgets` | Integer primary key `id`; required integer `month` and `year`; required `amount NUMERIC(12, 2)`; nullable `category VARCHAR(100)` references `categories.name` with ON DELETE RESTRICT. Unique month/year/category; a partial unique month/year index WHERE category IS NULL permits only one overall budget. Month 1-12, year 2000-2100, positive amount; index on `id`. |
-| `transactions` | Integer primary key `id`; required `date DATE`, `merchant VARCHAR(255)`, `category VARCHAR(100)` referencing `categories.name` with ON DELETE RESTRICT, `bank VARCHAR(100)`, `type VARCHAR(7)`, `amount NUMERIC(12, 2)`, `pie_color VARCHAR(100)`. Positive amount; type income/expense. Composite indexes on type/date and category/type/date. |
-| `alembic_version` | Managed by Alembic; records the applied revision. |
+The separate demo seeder requires an explicitly enabled demo database. Applying migrations to the normal database never populates demo finances.
 
-Direct SQL inserts must still supply the legacy transaction `pie_color` field and create/reuse the canonical category before inserting a financial row. HTTP responses derive chart colors from `categories.color`, so the legacy transaction color no longer controls chart appearance. These tables have no user ownership or timestamps yet.
-
-Migration `0001` creates the initial financial tables and indexes without sample data. Migration `0002`:
-
-1. Creates the shared category table and case-insensitive unique index.
-2. Backfills existing transaction categories, merging case/outer-space variations and replacing blank category names with `Uncategorized`. Dates, amounts and transaction IDs are preserved; stored category spelling is normalized.
-3. Adds the transaction category foreign key and spending-query index.
-4. Adds nullable budget category and its foreign key. Existing budgets keep the same ID/period/amount and remain All categories (`NULL`), preserving their spending scope.
-5. Replaces the old one-budget-per-month uniqueness with category/month/year uniqueness plus a partial unique index for overall budgets. Ordinary SQL uniqueness alone would permit multiple NULL categories, hence the extra index.
-
-No demo transactions are inserted. The registered transaction API now reads/writes these tables; the old sample router is unused. Budget spending is calculated from saved expenses for the category/month; an overall budget includes all categories. Category deletion is restricted while referenced, and deleting a budget does not delete its expenses.
-
-Migration `0003` adds a non-null category color with the `chart-blue-2` server default and `check_category_color` allowlist. It copies the earliest saved transaction color for each category if that color is one of the supported 17 `var(--chart-*-2)` values; otherwise it retains blue. It preserves every budget/transaction row, category name and foreign key. The migration freezes its own palette instead of importing mutable application configuration. No sample categories are inserted.
-
-## Apply existing migrations
+## Apply existing revisions
 
 From `backend/`:
 
 ```powershell
 uv sync --locked
-docker compose up -d --wait --wait-timeout 60 db
+docker compose up -d --wait db
 uv run alembic upgrade head
 uv run alembic current
 uv run alembic check
 ```
 
-On the current schema, `current` reports `0003 (head)` and `check` reports `No new upgrade operations detected.` Both were verified against local PostgreSQL during category-creator integration. Existing categories and financial rows were preserved; temporary API-verification rows were rolled back. Check your database again after changes or when using a different environment.
+Expected: `0005 (head)` and no new upgrade operations. Full Docker startup runs migrations before the API; local Python users apply them explicitly.
 
-`upgrade head` applies only pending revisions. The initial revision already exists; do not generate another "create budgets table" revision. `revision --autogenerate` compares an existing database with metadata and needs a reachable, up-to-date database.
+To inspect the running normal Docker backend from the repository root:
 
-## Make a future schema change
+```powershell
+docker compose exec backend alembic current
+docker compose exec backend alembic check
+```
 
-1. Apply any pending revisions to your development database.
-2. Change the SQLAlchemy model. If adding a new model, import it in `src/backend/models/__init__.py` so Alembic sees it.
-3. Generate a proposed revision:
+`current` reads the connected database's revision. `heads` reads the latest checked-in revision. `check` compares model metadata with the connected schema without creating a revision. A successful comparison does not replace data-integrity or API tests.
 
-   ```powershell
-   uv run alembic revision --autogenerate -m "describe the schema change"
-   ```
+The initial budgets revision already exists. Do not generate another initial revision. Autogeneration requires a reachable database with existing revisions applied.
 
-4. Review the new file in `versions/`. Check table/column names, types, constraints, indexes, defaults and both upgrade/downgrade operations. Pay particular attention to dropped data, renamed columns and non-null additions that need backfills.
-5. Apply it to the development database:
+## Create a future revision
 
-   ```powershell
-   uv run alembic upgrade head
-   uv run alembic check
-   uv run python -B -m unittest discover -s tests -v
-   ```
+1. Apply current revisions to an isolated development database.
+2. Change the model and register new models in `models/__init__.py`.
+3. Run `uv run alembic revision --autogenerate -m "describe the schema change"`.
+4. Review upgrade/downgrade operations, types, foreign keys, constraints, indexes, defaults, data backfills and deletions. Autogeneration cannot reliably infer every rename or business rule.
+5. Apply to development, run `alembic check`, backend tests and PostgreSQL/API verification.
+6. Keep model and reviewed revision together. Do not rewrite revisions already applied to shared databases.
 
-6. Validate the change against PostgreSQL and affected API behavior; the regular test suite uses SQLite memory and does not replace live PostgreSQL checks. Commit the model and its reviewed migration together when development is ready for a commit.
-
-Autogeneration proposes changes; it does not replace review. See [Alembic autogeneration](https://alembic.sqlalchemy.org/en/latest/autogenerate.html).
-
-Keep revisions already applied to shared databases unchanged; add a successor revision for new changes. Each revision declares its parent in `down_revision`. Investigate multiple heads before applying or merging migration branches.
-
-## Inspect migration history
+Inspection commands:
 
 ```powershell
 uv run alembic heads
@@ -91,45 +67,32 @@ uv run alembic current
 uv run alembic check
 ```
 
-`heads` describes the latest revision files. `current` describes the connected database. `check` compares that database with current models without creating a revision file.
-
-To inspect SQL for the initial revision without executing it:
-
-```powershell
-uv run alembic upgrade base:0001 --sql
-```
-
-This project's offline path still requires a valid PostgreSQL `DATABASE_URL` to select the dialect, but does not connect. Generated SQL is not proof that a migration will succeed on existing data.
+Offline initial SQL: `uv run alembic upgrade base:0001 --sql`. The offline path still needs valid URL configuration to select the dialect; it does not connect.
 
 ## Rollback
 
-Inspect the revision's `downgrade()` and preserve needed data before considering rollback. Downgrading `0001` drops both financial tables and their contents.
+Prefer corrective forward migrations for populated databases. Back up needed data and coordinate schema/application versions before downgrading.
 
-Downgrading `0003` drops only the category color column and its check, losing selected colors while retaining categories, budgets, transactions and their links. The new application requires this column, so coordinate any downgrade with an application rollback. Reapplying derives colors again from legacy transaction values/defaults; it cannot recover later Settings color choices automatically.
-
-Downgrading `0002` removes category links and the category table, turning any remaining category budget into a whole-month budget. Its online downgrade refuses to proceed when more than one budget exists for any month/year, because the old schema cannot represent those rows without losing data. Resolve that business decision explicitly after preserving data; never automatically delete budgets to make rollback succeed. The original transaction category capitalization/spacing is not restored. Offline SQL rendering cannot perform the data preflight, though database uniqueness still rejects incompatible rows. Prefer a forward corrective migration for populated environments.
-
-For a disposable development database only, the command to return to the previous revision is:
-
-```powershell
-uv run alembic downgrade -1
-```
-
-Do not use this as a routine troubleshooting step on a populated database. In shared/deployed environments, prefer a reviewed corrective migration when rollback would discard data. Do not use `stamp head` as a substitute for actually creating the schema.
-
-## Testing and diagnostics
-
-`tests/test_backend.py` contains 35 passing tests including color backfill/default/preservation/downgrade, database palette enforcement, category references, guarded downgrade and model comparison on isolated SQLite memory, plus PostgreSQL SQL rendering. SQLite expression-index reflection is limited, so separate live PostgreSQL `alembic check`, color-constraint inspection and API verification were also performed. No migration is automatically applied when FastAPI starts.
-
-| Error | What to check |
+| Downgrade | Effect |
 | --- | --- |
-| Cannot import `Base` or a model | Use the shared base; ensure new models are registered and dependencies are installed. |
-| Constraint refers to missing column `category` | A constraint does not define a column. Use the updated model with its category column/FK and apply revision `0002`. |
-| `DATABASE_URL is not configured` | Check `backend/.env` and any process override. |
-| Connection refused | Start this project's Docker service and verify host port 5433. |
-| Password authentication failed | Check the actual database role password; changing initialization variables does not alter an existing role. |
-| Target database is not up to date | Apply existing revisions before autogenerating another one. |
-| Relation already exists | Verify database identity and migration history before making changes; do not drop tables or stamp blindly. |
-| New upgrade operations detected | Inspect model/schema differences and prepare a reviewed revision if intended. |
+| 0005 to 0004 | Loses subscriptions and payment history. |
+| 0004 to 0003 | Loses custom rules; reapplying restores only starter rules. |
+| 0003 to 0002 | Loses chosen category colors. |
+| 0002 to 0001 | Removes category relationships; online downgrade refuses when multiple budgets share a month/year because the old schema cannot represent them. |
+| 0001 to base | Drops transactions and budgets. |
 
-This directory contains schema history, not database backups. Docker's named volume provides persistence but is not itself a backup/recovery procedure.
+`uv run alembic downgrade -1` is a deliberate development operation, not a routine error fix. Do not delete financial data to force a downgrade, or use `stamp head` to pretend missing tables exist.
+
+## Diagnostics
+
+| Error | Check |
+| --- | --- |
+| Missing Base/model | Use the shared Base and register each model. |
+| Constraint references an undefined column | A constraint does not create its column; model and migration must both define it. |
+| Missing URL or connection refused | Verify environment configuration, database service and host port. |
+| Target database not up to date | Upgrade existing revisions before autogeneration. |
+| Relation already exists | Inspect database identity and migration history before changing anything. |
+| Multiple heads | Review migration branches before merging them. |
+| Metadata drift | Investigate differences and add a reviewed revision if intentional. |
+
+Tests use isolated databases. Verify against PostgreSQL as well as SQLite. Named volumes provide persistence, not backups. See [Docker operations](../../DOCKER.md).

@@ -98,3 +98,12 @@ class TransactionRead(TransactionBase):
         from_attributes=True,
         populate_by_name=True,
     )
+
+
+class TransactionPage(BaseModel):
+    items: list[TransactionRead]
+    total: int
+    overall_total: int
+    page: int
+    page_size: Literal[50] = 50
+    pages: int

@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, pool
 
 from backend.database.base import Base
 from backend.database.database import DatabaseConfigurationError, get_database_url
-from backend import models  # noqa: F401 -- registers both models in Base.metadata
+from backend import models  # noqa: F401 -- registers models in Base.metadata
 
 
 config = context.config

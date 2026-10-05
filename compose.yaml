@@ -1,0 +1,4 @@
+# Keep the existing Compose project/volume so a normal start preserves local data.
+name: backend
+include:
+  - path: ./backend/docker-compose.yml

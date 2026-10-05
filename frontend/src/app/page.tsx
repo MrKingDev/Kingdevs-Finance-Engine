@@ -35,9 +35,9 @@ export default function Home() {
             </Link>
           </Button>
         </div>
-        <p className="mt-3 text-muted-foreground">
+        <div className="mt-3 text-muted-foreground">
           <BackendTest />
-        </p>
+        </div>
       </div>
     </main>
   );

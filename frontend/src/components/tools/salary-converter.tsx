@@ -167,20 +167,20 @@ export default function SalaryConverter() {
             <Label>Pay Period</Label>
 
             <Select
-              value={payPeriod}
-              onValueChange={(value) => setPayPeriod(value as PayPeriod)}
+              selectedKey={payPeriod}
+              onSelectionChange={(value) => value !== null && setPayPeriod(String(value) as PayPeriod)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
 
               <SelectContent>
-                <SelectItem value="hourly">Hourly</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="biweekly">Biweekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="yearly">Yearly</SelectItem>
+                <SelectItem id="hourly">Hourly</SelectItem>
+                <SelectItem id="daily">Daily</SelectItem>
+                <SelectItem id="weekly">Weekly</SelectItem>
+                <SelectItem id="biweekly">Biweekly</SelectItem>
+                <SelectItem id="monthly">Monthly</SelectItem>
+                <SelectItem id="yearly">Yearly</SelectItem>
               </SelectContent>
             </Select>
           </div>

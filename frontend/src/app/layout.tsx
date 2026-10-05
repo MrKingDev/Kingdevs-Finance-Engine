@@ -54,6 +54,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Header />
 
             <main className="min-w-0 flex-1 overflow-x-hidden p-6 lg:pl-8">
+              {process.env.NEXT_PUBLIC_DEMO_MODE === "true" && (
+                <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+                  <strong>Demo workspace</strong> — fictional sample data in a separate database. Feel free to explore.
+                </div>
+              )}
               {children}
             </main>
             <Toaster />

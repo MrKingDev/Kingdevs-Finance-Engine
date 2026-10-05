@@ -10,6 +10,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { Budget } from "@/types/api";
@@ -73,15 +84,34 @@ const BudgetCard = ({
         </CardTitle>
 
         <CardAction>
-          <Button
-            variant="destructive"
-            size="icon"
-            aria-label="Delete budget"
-            isDisabled={isDeleting}
-            onPress={() => onDelete(budget.id)}
-          >
-            <Trash className="size-4" />
-          </Button>
+          <AlertDialogTrigger>
+            <Button
+              variant="destructive"
+              size="icon"
+              aria-label="Delete budget"
+            >
+              <Trash className="size-4" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete
+                  this goal.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Never Mind</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  isDisabled={isDeleting}
+                  onPress={() => onDelete(budget.id)}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialog>
+          </AlertDialogTrigger>
         </CardAction>
       </CardHeader>
 

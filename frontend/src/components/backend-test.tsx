@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API_URL } from "@/lib/finance-api";
 
 export function BackendTest() {
   const [status, setStatus] = useState("Loading...");
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const controller = new AbortController();
     async function checkBackend() {
       try {
         // FETCHES API
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/health`,
-        );
+        const response = await fetch(`${API_URL}/health`, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
 
         // Checks if request failed
         if (!response.ok) {
@@ -22,14 +25,17 @@ export function BackendTest() {
         const data = await response.json();
 
         // Checks if API didn't connect
-        setStatus(data.status);
+        if (!controller.signal.aborted) setStatus(data.status);
       } catch (error) {
-        console.error(error);
-        setError("Could not connect to backend");
+        if (!controller.signal.aborted) {
+          console.error(error);
+          setError("Could not connect to backend");
+        }
       }
     }
 
-    checkBackend();
+    void checkBackend();
+    return () => controller.abort();
   }, []);
 
   if (error) {

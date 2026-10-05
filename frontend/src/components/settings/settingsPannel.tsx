@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CategoriesSettings from "./pages/categories";
 
 import {
   Card,
@@ -10,9 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import ClearData from "./pages/clearData";
+import CategoriesSettings from "./pages/categories";
+import CSVImport from "./pages/csvImport";
+import ImportRules from "./pages/rules";
+import Downloadables from "./pages/downloadables";
 
 const tabOptions = [
   {
@@ -28,26 +31,7 @@ const tabOptions = [
         </CardHeader>
 
         <CardContent>
-          <p>Option 1 content</p>
-        </CardContent>
-      </Card>
-    ),
-  },
-  {
-    label: "Preferences",
-    optionId: "pref",
-    content: (
-      <Card>
-        <CardHeader>
-          <CardTitle>Preferences</CardTitle>
-          <CardDescription>
-            Control presentation, rule behavior, and deterministic alert
-            thresholds.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <p>Option 2 content</p>
+          <CSVImport />
         </CardContent>
       </Card>
     ),
@@ -65,7 +49,7 @@ const tabOptions = [
         </CardHeader>
 
         <CardContent>
-          <p>Option 3 content</p>
+          <Downloadables />
         </CardContent>
       </Card>
     ),
@@ -78,13 +62,12 @@ const tabOptions = [
         <CardHeader>
           <CardTitle>Rule Settings</CardTitle>
           <CardDescription>
-            Higher numbers run first. Equal priorities use the older rule ID
-            first.
+            Automatically recognize expenses, income and categories in your CSV.
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          <p>Option 4 content</p>
+          <ImportRules />
         </CardContent>
       </Card>
     ),
@@ -115,9 +98,9 @@ const tabOptions = [
         <CardHeader>
           <CardTitle>CLEAR DATA</CardTitle>
           <CardDescription>
-            This deletes transactions, budgets, goals, rules, and custom
-            categories from the database. It cannot be undone. In the dev
-            profile, sample data returns when the backend restarts.
+            This permanently deletes saved transactions, budgets, and
+            categories. Browser-only goals and tools are unaffected. Restarting
+            the backend does not restore deleted data.
           </CardDescription>
         </CardHeader>
 
@@ -151,7 +134,7 @@ export default function SettingsPanel() {
       w-full
       overflow-x-auto
       overflow-y-hidden
-      [scrollbar-width:none]
+      scrollbar-none
       [&::-webkit-scrollbar]:hidden
     "
       >

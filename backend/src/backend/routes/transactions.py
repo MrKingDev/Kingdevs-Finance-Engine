@@ -1,11 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from datetime import date
+from decimal import Decimal
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models.transaction import Transaction
 from backend.models.category import Category
-from backend.schemas.transaction import TransactionCreate, TransactionRead, TransactionUpdate
+from backend.schemas.transaction import TransactionCreate, TransactionPage, TransactionRead, TransactionUpdate
 from backend.services.categories import resolve_category
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
@@ -33,6 +37,49 @@ def create_transaction(data: TransactionCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(transaction)
     return transaction
+
+
+@router.get("/banks", response_model=list[str])
+def bank_names(db: Session = Depends(get_db)):
+    return db.scalars(select(Transaction.bank).distinct().order_by(Transaction.bank)).all()
+
+
+@router.get("/page", response_model=TransactionPage)
+def transaction_page(
+    page: int = Query(1, ge=1), search: str = Query("", max_length=255),
+    type: Literal["income", "expense"] | None = None,
+    category: str | None = Query(None, max_length=100), bank: str | None = Query(None, max_length=100),
+    start_date: date | None = None, end_date: date | None = None,
+    min_amount: Decimal | None = Query(None, ge=0), max_amount: Decimal | None = Query(None, ge=0),
+    db: Session = Depends(get_db),
+):
+    """Stable newest-first ordering; apply every filter before counting and selecting 50 rows."""
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(422, "Start date must be on or before end date.")
+    if min_amount is not None and max_amount is not None and min_amount > max_amount:
+        raise HTTPException(422, "Minimum amount must be no greater than maximum amount.")
+    filters = []
+    if search:
+        filters.append(or_(*(func.lower(column).contains(search.lower(), autoescape=True)
+                             for column in (Transaction.merchant, Transaction.category, Transaction.bank))))
+    for column, value in [(Transaction.type, type), (Transaction.category, category), (Transaction.bank, bank)]:
+        if value is not None:
+            filters.append(column == value)
+    for condition, value in [(Transaction.date >= start_date if start_date else None, start_date),
+                             (Transaction.date <= end_date if end_date else None, end_date)]:
+        if value is not None:
+            filters.append(condition)
+    if min_amount is not None:
+        filters.append(Transaction.amount >= min_amount)
+    if max_amount is not None:
+        filters.append(Transaction.amount <= max_amount)
+    total = db.scalar(select(func.count()).select_from(Transaction).where(*filters))
+    overall = db.scalar(select(func.count()).select_from(Transaction)) if filters else total
+    pages = max(1, (total + 49) // 50)
+    current = min(page, pages)
+    items = db.scalars(select(Transaction).where(*filters).order_by(Transaction.date.desc(), Transaction.id.desc())
+                       .offset((current - 1) * 50).limit(50)).all()
+    return TransactionPage(items=items, total=total, overall_total=overall, page=current, pages=pages)
 
 
 @router.get("/{transaction_id}", response_model=TransactionRead)

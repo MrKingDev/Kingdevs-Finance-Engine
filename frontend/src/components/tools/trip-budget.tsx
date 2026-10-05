@@ -1307,8 +1307,8 @@ export default function TripBudget() {
                     className="flex gap-4 rounded-lg border p-4"
                   >
                     <Checkbox
-                      checked={completed}
-                      onCheckedChange={(checked) =>
+                      isSelected={completed}
+                      onChange={(checked) =>
                         setChecklist((current) => ({
                           ...current,
                           [item.id]: checked === true,

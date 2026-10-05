@@ -12,7 +12,9 @@ const AI = () => {
         </div>
       </header>
 
-      <section></section>
+      <section>
+        <h2 className="mt-4 text-2xl font-semibold">Coming soon...</h2>
+      </section>
     </PageTransition>
   );
 };

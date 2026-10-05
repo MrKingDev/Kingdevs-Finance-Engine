@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import PageTransition from "@/components/pageTransitions";
 import GoalCard from "@/components/goal/goalCard";
+import { DEMO_GOALS } from "@/data/demo-goals";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -44,7 +45,9 @@ const Goals = () => {
   // Goals
   // --------------------------------
 
-  const [goals, setGoals] = useState<Goal[]>([]);
+  const [goals, setGoals] = useState<Goal[]>(() =>
+    process.env.NEXT_PUBLIC_DEMO_MODE === "true" ? DEMO_GOALS.map((goal) => ({ ...goal })) : [],
+  );
 
   // --------------------------------
   // Create Goal Form

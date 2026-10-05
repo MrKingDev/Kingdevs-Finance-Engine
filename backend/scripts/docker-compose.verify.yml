@@ -1,0 +1,24 @@
+# Run only as an override: docker compose -p finance-engine-verify -f compose.yaml
+# -f backend/scripts/docker-compose.verify.yml up -d --no-build --wait
+# First build the normal backend/frontend images. This uses a separate named volume.
+services:
+  db:
+    container_name: finance-engine-verify-db
+    environment:
+      POSTGRES_PASSWORD: finance_verify_local
+    ports: !override
+      - "127.0.0.1:15433:5432"
+  migrate:
+    image: backend-backend
+    environment:
+      POSTGRES_PASSWORD: finance_verify_local
+  backend:
+    image: backend-backend
+    environment:
+      POSTGRES_PASSWORD: finance_verify_local
+    ports: !override
+      - "127.0.0.1:18000:8000"
+  frontend:
+    image: backend-frontend
+    ports: !override
+      - "127.0.0.1:13001:3001"

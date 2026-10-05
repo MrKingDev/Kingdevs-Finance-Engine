@@ -186,8 +186,8 @@ export default function PaycheckSplitter() {
 
             <Switch
               id="tithes"
-              checked={includeTithes}
-              onCheckedChange={setIncludeTithes}
+              isSelected={includeTithes}
+              onChange={setIncludeTithes}
             />
           </div>
 
@@ -308,8 +308,8 @@ export default function PaycheckSplitter() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={() => removeCategory(category.id)}
-                  disabled={categories.length === 1}
+                  onPress={() => removeCategory(category.id)}
+                  isDisabled={categories.length === 1}
                   aria-label={`Delete ${category.name || "category"}`}
                 >
                   <Trash2 className="size-4" />

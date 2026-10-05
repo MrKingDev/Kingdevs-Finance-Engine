@@ -14,8 +14,9 @@ from alembic.migration import MigrationContext
 from alembic.util import CommandError
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event, inspect, text
-from sqlalchemy.exc import IntegrityError, OperationalError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.sql.dml import Delete
 from sqlalchemy.pool import StaticPool
 
 from backend.database import Base
@@ -36,7 +37,7 @@ class ConfigurationTests(unittest.TestCase):
     def test_models_share_one_registry(self):
         self.assertIs(Base, ModelBase)
         self.assertIs(Budget.metadata, Transaction.metadata)
-        self.assertEqual(set(Base.metadata.tables), {"budgets", "categories", "transactions"})
+        self.assertEqual(set(Base.metadata.tables), {"budgets", "categories", "transactions", "transaction_rules", "subscriptions", "subscription_payments"})
 
     def test_missing_database_does_not_break_public_routes(self):
         with patch.object(database.os, "environ", {"DATABASE_URL": ""}):
@@ -46,6 +47,7 @@ class ConfigurationTests(unittest.TestCase):
                 schema = client.get("/openapi.json")
                 self.assertEqual(schema.status_code, 200)
                 self.assertIn("/budgets", schema.json()["paths"])
+                self.assertTrue(schema.json()["paths"]["/data/clear"]["delete"]["requestBody"]["required"])
                 self.assertEqual(client.get("/docs").status_code, 200)
                 response = client.get("/budgets")
                 self.assertEqual(response.status_code, 503)
@@ -147,6 +149,33 @@ class BudgetTests(unittest.TestCase):
             tables = inspect(connection).get_table_names()
             self.assertNotIn("budgets", tables)
             self.assertNotIn("transactions", tables)
+
+    def test_rules_migration_seeds_defaults_and_preserves_financial_records(self):
+        with self.engine.begin() as connection:
+            config = migration_config()
+            config.attributes["connection"] = connection
+            command.downgrade(config, "0003")
+        self.create_transaction(merchant="Existing rent", amount="1200.00")
+        self.create_budget()
+        before = self.financial_snapshot()
+        with self.engine.begin() as connection:
+            config = migration_config()
+            config.attributes["connection"] = connection
+            command.upgrade(config, "head")
+        self.assertEqual(self.financial_snapshot(), before)
+        rules = self.client.get("/rules").json()
+        self.assertEqual(len(rules), 6)
+        self.assertEqual(next(rule["type"] for rule in rules if rule["match_text"] == "rent"), "expense")
+        preview = self.client.post("/imports/csv/preview", data={"bank": "Sample Bank"},
+                                   files={"file": ("sample.csv", b"Date,Description,Amount\n2026-10-01,Rent,1200\n2026-10-02,Salary,2500\n", "text/csv")})
+        self.assertEqual(preview.status_code, 200, preview.text)
+        self.assertEqual([row["type"] for row in preview.json()["rows"]], ["expense", "income"])
+        with self.engine.begin() as connection:
+            config = migration_config()
+            config.attributes["connection"] = connection
+            command.downgrade(config, "0003")
+            self.assertNotIn("transaction_rules", inspect(connection).get_table_names())
+        self.assertEqual(self.financial_snapshot(), before)
 
     def test_create_read_update_delete(self):
         response = self.create_budget()
@@ -395,6 +424,85 @@ class BudgetTests(unittest.TestCase):
             with self.assertRaisesRegex(CommandError, "multiple category budgets"):
                 command.downgrade(config, "0001")
         self.assertEqual(len(self.client.get("/budgets").json()), 2)
+
+    def seed_clear_data_records(self):
+        self.assertEqual(self.create_transaction().status_code, 201)
+        self.assertEqual(self.create_budget(category="Groceries").status_code, 201)
+        self.assertEqual(self.create_budget().status_code, 201)
+        self.assertEqual(self.client.post("/categories", json={"name": "Unused", "color": "chart-orange-2"}).status_code, 201)
+
+    def financial_snapshot(self):
+        return {path: self.client.get(path).json() for path in ("/transactions", "/budgets", "/categories")}
+
+    def test_clear_data_deletes_supported_rows_without_dropping_schema(self):
+        self.seed_clear_data_records()
+        response = self.client.request("DELETE", "/data/clear", json={"confirmation": "CLEAR"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "Transactions, budgets, and categories cleared successfully."})
+        self.assertEqual(self.financial_snapshot(), {"/transactions": [], "/budgets": [], "/categories": []})
+        with self.engine.connect() as connection:
+            self.assertEqual(set(inspect(connection).get_table_names()), {"transactions", "budgets", "categories", "transaction_rules", "subscriptions", "subscription_payments", "alembic_version"})
+            self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0005")
+
+    def test_clear_data_requires_exact_confirmation_and_preserves_records(self):
+        self.seed_clear_data_records()
+        before = self.financial_snapshot()
+        for confirmation in ("", "clear", "CLEAR ", "DELETE"):
+            with self.subTest(confirmation=confirmation):
+                response = self.client.request("DELETE", "/data/clear", json={"confirmation": confirmation})
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(self.financial_snapshot(), before)
+        for payload in ({}, {"confirmation": None}, {"confirmation": 123}):
+            with self.subTest(payload=payload):
+                self.assertEqual(self.client.request("DELETE", "/data/clear", json=payload).status_code, 422)
+        self.assertEqual(self.client.request("DELETE", "/data/clear?confirmation=CLEAR").status_code, 422)
+        self.assertEqual(self.financial_snapshot(), before)
+
+    def test_clear_data_rejects_non_delete_methods(self):
+        self.seed_clear_data_records()
+        before = self.financial_snapshot()
+        self.assertEqual(self.client.get("/data/clear").status_code, 405)
+        self.assertEqual(self.client.post("/data/clear", json={"confirmation": "CLEAR"}).status_code, 405)
+        self.assertEqual(self.financial_snapshot(), before)
+
+    def test_clear_data_can_repeat_and_then_accept_new_records(self):
+        self.seed_clear_data_records()
+        for _ in range(2):
+            self.assertEqual(self.client.request("DELETE", "/data/clear", json={"confirmation": "CLEAR"}).status_code, 200)
+        self.assertEqual(self.create_transaction().status_code, 201)
+        self.assertEqual(self.create_budget(category="Groceries").status_code, 201)
+        self.assertEqual(len(self.client.get("/transactions").json()), 1)
+
+    def test_clear_data_rolls_back_earlier_deletes_when_a_later_delete_fails(self):
+        self.seed_clear_data_records()
+        before = self.financial_snapshot()
+        execute = Session.execute
+
+        def fail_budget_delete(session, statement, *args, **kwargs):
+            if isinstance(statement, Delete) and statement.table.name == "budgets":
+                raise IntegrityError("DELETE", {}, Exception("private-database-detail"))
+            return execute(session, statement, *args, **kwargs)
+
+        with patch.object(Session, "execute", autospec=True, side_effect=fail_budget_delete):
+            response = self.client.request("DELETE", "/data/clear", json={"confirmation": "CLEAR"})
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json(), {"detail": "Failed to clear data."})
+        self.assertNotIn("private-database-detail", response.text)
+        self.assertEqual(self.financial_snapshot(), before)
+
+    def test_clear_data_rolls_back_failed_commit_and_keeps_unavailability_503(self):
+        self.seed_clear_data_records()
+        before = self.financial_snapshot()
+        for failure, expected_status in (
+            (SQLAlchemyError("private-database-detail"), 500),
+            (OperationalError("COMMIT", {}, Exception("private-database-detail")), 503),
+        ):
+            with self.subTest(status=expected_status):
+                with patch.object(Session, "commit", autospec=True, side_effect=failure):
+                    response = self.client.request("DELETE", "/data/clear", json={"confirmation": "CLEAR"})
+                self.assertEqual(response.status_code, expected_status)
+                self.assertNotIn("private-database-detail", response.text)
+                self.assertEqual(self.financial_snapshot(), before)
 
 
 class MigrationPreservationTests(unittest.TestCase):

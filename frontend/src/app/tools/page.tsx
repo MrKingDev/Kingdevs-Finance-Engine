@@ -58,7 +58,7 @@ const Tools = () => {
           <TabsList className="w-full">
             <TabsTrigger id="sub">Subscription Checker</TabsTrigger>
             {/* <TabsTrigger id="wish">Wish List</TabsTrigger> */}
-            <TabsTrigger id="trip">Trip Budget</TabsTrigger>
+            {/* <TabsTrigger id="trip">Trip Budget</TabsTrigger> */}
             <TabsTrigger id="paycheck">Paycheck Splitter</TabsTrigger>
             <TabsTrigger id="salary">Salary Converter</TabsTrigger>
             <TabsTrigger id="bill">Bill Splitter</TabsTrigger>

@@ -341,9 +341,9 @@ const Dashboard = () => {
 
             <CardContent>
               {chartType === "area" ? (
-                <AreaChartDisplay />
+                <AreaChartDisplay year={selectedYear} />
               ) : (
-                <BarChartDisplay />
+                <BarChartDisplay year={selectedYear} />
               )}
             </CardContent>
           </Card>

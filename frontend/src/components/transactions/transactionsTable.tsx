@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { API_URL, notifyFinanceChanged } from "@/lib/finance-api";
-import { useFinanceList } from "@/lib/use-finance-list";
+import { useEffect, useState } from "react";
+import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
 import type { Transaction } from "@/types/api";
 
 import {
@@ -67,11 +66,56 @@ const TransactionsTable = ({
 }: TransactionsTableProps) => {
   // State
 
-  const {
-    data: transactions,
-    loading,
-    error,
-  } = useFinanceList<Transaction>("/transactions");
+  const filters = new URLSearchParams();
+  if (search) filters.set("search", search);
+  if (type !== "all") filters.set("type", type);
+  if (category !== null) filters.set("category", category);
+  if (bank !== "all") filters.set("bank", bank);
+  if (startDate) filters.set("start_date", startDate);
+  if (endDate) filters.set("end_date", endDate);
+  if (minAmount) filters.set("min_amount", minAmount);
+  if (maxAmount) filters.set("max_amount", maxAmount);
+  const filterKey = filters.toString();
+  const [position, setPosition] = useState({ filterKey: "", page: 1 });
+  const page = position.filterKey === filterKey ? position.page : 1;
+  const [result, setResult] = useState<{
+    items: Transaction[]; total: number; overall_total: number; page: number; pages: number;
+  }>({ items: [], total: 0, overall_total: 0, page: 1, pages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    const refresh = () => setRevision((value) => value + 1);
+    window.addEventListener("finance-data-changed", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("finance-data-changed", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+    async function load() {
+      try {
+        const response = await fetch(`${API_URL}/transactions/page?page=${page}&${filterKey}`, {
+          signal: controller.signal, cache: "no-store",
+        });
+        if (!response.ok) throw new Error(await apiError(response, "Unable to load transactions."));
+        const data = await response.json();
+        if (!controller.signal.aborted) setResult(data);
+      } catch (failure) {
+        if (!controller.signal.aborted)
+          setError(failure instanceof Error ? failure.message : "Unable to load transactions.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+    void load();
+    return () => controller.abort();
+  }, [filterKey, page, revision]);
+  const transactions = result.items;
   const [actionError, setActionError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -120,45 +164,6 @@ const TransactionsTable = ({
     }
   };
 
-  // Filter transactions
-
-  const filteredTransactions = transactions.filter((transaction) => {
-    const searchValue = search.toLowerCase();
-
-    const matchesSearch =
-      transaction.merchant.toLowerCase().includes(searchValue) ||
-      transaction.category.toLowerCase().includes(searchValue) ||
-      transaction.bank.toLowerCase().includes(searchValue);
-
-    const matchesType = type === "all" || transaction.type === type;
-
-    const matchesCategory =
-      category === null || transaction.category === category;
-
-    const matchesBank = bank === "all" || transaction.bank === bank;
-
-    const matchesStartDate = startDate === "" || transaction.date >= startDate;
-
-    const matchesEndDate = endDate === "" || transaction.date <= endDate;
-
-    const matchesMinAmount =
-      minAmount === "" || Number(transaction.amount) >= Number(minAmount);
-
-    const matchesMaxAmount =
-      maxAmount === "" || Number(transaction.amount) <= Number(maxAmount);
-
-    return (
-      matchesSearch &&
-      matchesType &&
-      matchesCategory &&
-      matchesBank &&
-      matchesStartDate &&
-      matchesEndDate &&
-      matchesMinAmount &&
-      matchesMaxAmount
-    );
-  });
-
   // Loading Page
 
   if (loading) {
@@ -190,14 +195,9 @@ const TransactionsTable = ({
 
       <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">
-            {filteredTransactions.length}
-          </span>{" "}
-          of{" "}
-          <span className="font-medium text-foreground">
-            {transactions.length}
-          </span>{" "}
-          transactions
+          Showing {result.total ? (result.page - 1) * 50 + 1 : 0}–{Math.min(result.page * 50, result.total)} of{" "}
+          {result.total.toLocaleString()} matching transactions
+          {result.total !== result.overall_total && ` (${result.overall_total.toLocaleString()} total)`}
         </p>
 
         <Button
@@ -213,7 +213,7 @@ const TransactionsTable = ({
       {/* Table */}
 
       <div className="w-full overflow-x-auto rounded-md border">
-        <Table className="min-w-150">
+        <Table aria-label="Transactions" className="min-w-150">
           <TableHeader>
             <TableHead id="date" isRowHeader className="whitespace-nowrap">
               Date
@@ -247,7 +247,7 @@ const TransactionsTable = ({
           </TableHeader>
 
           <TableBody renderEmptyState={() => "No transactions found."}>
-            {filteredTransactions.map((transaction) => (
+            {transactions.map((transaction) => (
               <TableRow key={transaction.id} id={String(transaction.id)}>
                 {/* Date */}
 
@@ -336,6 +336,17 @@ const TransactionsTable = ({
           </TableBody>
         </Table>
       </div>
+      <nav aria-label="Transaction pages" className="flex flex-wrap items-center justify-between gap-3 py-4">
+        <p role="status" className="text-sm text-muted-foreground">
+          Page {result.page.toLocaleString()} of {result.pages.toLocaleString()} · 50 per page
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" isDisabled={result.page <= 1 || loading}
+            onPress={() => setPosition({ filterKey, page: result.page - 1 })}>Previous</Button>
+          <Button variant="outline" isDisabled={result.page >= result.pages || loading}
+            onPress={() => setPosition({ filterKey, page: result.page + 1 })}>Next</Button>
+        </div>
+      </nav>
     </div>
   );
 };
