@@ -1,6 +1,6 @@
 # Alembic migrations
 
-Alembic is the source of truth for the PostgreSQL schema. Current head: **0005**. Downloads, sample fixtures, CSV batching and transaction pagination do not require new financial tables.
+Alembic is the source of truth for the PostgreSQL schema. Current head: **0006**. Downloads, sample fixtures, CSV batching and transaction pagination do not require new financial tables.
 
 Commands in this guide run from `backend/`. Configure `.env` using the [backend setup instructions](../README.md#run-locally) before connecting to a database. Installing Python dependencies does not create tables; `alembic upgrade head` applies the checked-in revisions.
 
@@ -19,6 +19,7 @@ Normal development uses PostgreSQL on host port 5433; containers use `db:5432`. 
 | 0003 | Category color field and allowlist. | Uses supported legacy colors where available, otherwise blue. |
 | 0004 | Persistent CSV description rules. | Seeds six editable direction rules, without changing financial rows. |
 | 0005 | Subscriptions and payment history. | Adds tables/constraints/indexes without sample records. |
+| 0006 | Goals and dated income, expense and contribution entries. | Adds tables/constraints/index without changing existing finances. |
 
 Tables: `transactions`, `categories`, `budgets`, `transaction_rules`, `subscriptions`, `subscription_payments`, and `alembic_version`.
 
@@ -36,7 +37,7 @@ uv run alembic current
 uv run alembic check
 ```
 
-Expected: `0005 (head)` and no new upgrade operations. Full Docker startup runs migrations before the API; local Python users apply them explicitly.
+Expected: `0006 (head)` and no new upgrade operations. Full Docker startup runs migrations before the API; local Python users apply them explicitly.
 
 To inspect the running normal Docker backend from the repository root:
 
@@ -76,6 +77,7 @@ Prefer corrective forward migrations for populated databases. Back up needed dat
 | Downgrade | Effect |
 | --- | --- |
 | 0005 to 0004 | Loses subscriptions and payment history. |
+| 0006 to 0005 | Loses goals and their entries. |
 | 0004 to 0003 | Loses custom rules; reapplying restores only starter rules. |
 | 0003 to 0002 | Loses chosen category colors. |
 | 0002 to 0001 | Removes category relationships; online downgrade refuses when multiple budgets share a month/year because the old schema cannot represent them. |

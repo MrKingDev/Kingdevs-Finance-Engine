@@ -18,7 +18,7 @@ router = APIRouter(
     "/clear",
     response_model=ClearDataResponse,
     summary="Clear saved transactions, budgets and categories",
-    description="Requires the exact confirmation CLEAR. Deletes transactions, budgets and categories in one transaction. Subscriptions, payment history, import rules and browser-only goals/tools remain; category links on subscriptions and rules become null.",
+    description="Requires the exact confirmation CLEAR. Deletes transactions, budgets and categories in one transaction. Goals and entries, subscriptions, payment history, import rules and browser-only tools remain; category links on subscriptions and rules become null.",
 )
 def clear_data(
     request: ClearDataRequest,

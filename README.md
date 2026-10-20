@@ -1,6 +1,6 @@
 # KingDev's Finance Engine
 
-A personal finance dashboard built with Next.js, FastAPI, and PostgreSQL. Track transactions, category budgets, subscriptions and reports; import bank CSV files and download monthly PDF or CSV reports.
+A personal finance dashboard built with Next.js, FastAPI, and PostgreSQL. Track transactions, category budgets, savings/debt goals and subscriptions; import bank CSV files, download monthly PDF or CSV reports, and ask general finance questions through an optional local Ollama assistant.
 
 ## Choose a setup
 
@@ -26,7 +26,7 @@ Open **[Demo dashboard](http://localhost:3002/dashboard)** or **[Settings downlo
 
 The demo has its own database, volume, network, images, and ports. It does not read your normal database configuration. A **Demo workspace** banner identifies it.
 
-The sample dataset contains 168 fictional transactions across six months, 42 overall/category budgets, 12 categories, five subscriptions, five payment records, and three frontend sample goals. It is anchored to the first startup date; the current month's illustrative transactions are distributed across elapsed days. Repeated startup preserves existing records and edits.
+The sample dataset contains 168 fictional transactions across six months, 42 overall/category budgets, 12 categories, five subscriptions, five payment records, and three saved goals with nine entries. It is anchored to the first startup date; the current month's illustrative transactions are distributed across elapsed days. Repeated startup preserves existing records and edits.
 
 Stop the demo without deleting its data:
 
@@ -62,10 +62,10 @@ This is a local, single-user application. Authentication and per-user authorizat
 | Transactions | Create/delete, search, category/type/bank/date/amount filters, Previous/Next controls. | PostgreSQL; server filtering and **50 rows per page**. No edit UI yet. |
 | Budgets | Overall or category monthly budgets with spent, remaining and usage amounts. | PostgreSQL; actuals count matching expense transactions. |
 | Reports | Monthly cards, category spending, annual area/bar charts, weekly spending, history and budget performance. | Area/bar charts follow the selected year. Other widgets retain their documented scopes. |
-| Goals | Savings/debt goals and progress cards. | Frontend state; resets on reload. Demo builds initialize three examples. Contributions have no backend yet. |
+| Goals | Savings/debt goals, dated income/expense/contribution entries and progress cards. | PostgreSQL; goals and entries survive reloads. Entries are separate from ledger transactions. |
 | Tools | Subscriptions, paycheck/salary/bill calculators, compound interest, trip budget and wish list. | Subscriptions/payments: PostgreSQL. Wish list: localStorage. Other planning tools: component state. |
 | Settings | CSV import, downloads, saved import rules, shared categories/colors and Clear Data. | **500,000 rows / 50 MB** per import; separate 10,000-transaction monthly export limit. |
-| AI | Page placeholder. | No AI service connected. |
+| AI | Ask general finance questions through a local Ollama model. | Requires a separately running Ollama service. No access to financial records or saved conversation history. |
 
 ### Categories and budgets
 
@@ -107,7 +107,22 @@ PDFs use USD, Decimal totals, saved category colors and bundled fonts. Empty mon
 
 Subscriptions support add/edit, category selection, raster icons, archive/restore, payment recording and history. Recording a payment advances one billing period. It does not charge a provider or insert a ledger expense; enter/import that expense separately to avoid double counting.
 
-Typing `CLEAR` in Settings deletes transactions, budgets and categories. It retains subscriptions, payments, import rules and browser-only tools; removed category references become null.
+Typing `CLEAR` in Settings deletes transactions, budgets and categories. It retains goals and entries, subscriptions, payments, import rules and browser-only tools; removed category references become null.
+
+### Local AI assistant
+
+The **AI** page sends one question at a time to `POST /ai/chat`. The backend forwards it to Ollama, using `http://127.0.0.1:11434` and model `qwen3:4b-instruct` by default. Ollama must be running separately with the selected model installed; it is not included in either Compose stack.
+
+To use another Ollama server or installed model, set these environment variables in the PowerShell terminal that starts the local backend:
+
+```powershell
+$env:OLLAMA_BASE_URL = "http://127.0.0.1:11434"
+$env:OLLAMA_MODEL = "qwen3:4b-instruct"
+```
+
+Then start uvicorn as shown below and open `/ai`. The assistant receives only the current question, without transactions, balances, budgets or prior messages. Questions are limited to 4,000 characters; the backend uses a 120-second request timeout.
+
+For Docker, configure these variables on the **backend service** with an Ollama address reachable from that container. Its loopback address refers to the container itself. The current Compose files do not forward Ollama variables, so setting them only in your host terminal does not configure the container.
 
 ## Local development
 
@@ -140,13 +155,12 @@ Use `pnpm.cmd` on Windows if the PowerShell launcher is blocked. The local front
 frontend/src/app/                 Next.js pages and layout
 frontend/src/components/          Features and shared UI
 frontend/src/lib/                 API helpers and chart calculations
-frontend/src/data/demo-goals.ts   Opt-in frontend examples
 backend/src/backend/
   database/, models/, schemas/    Persistence and validation
   routes/, services/             API and business logic
   assets/fonts/                  PDF fonts and license
   seed_demo.py                   Guarded fictional dataset
-backend/migrations/              Alembic revisions 0001 through 0005
+backend/migrations/              Alembic revisions 0001 through 0006
 backend/tests/, backend/scripts/  Regression and integration checks
 compose.yaml                     Normal workspace
 compose.demo.yaml                Separate populated demo

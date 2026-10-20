@@ -15,6 +15,7 @@ from backend.models.budget import Budget
 from backend.models.category import Category
 from backend.models.subscription import Subscription, SubscriptionPayment
 from backend.models.transaction import Transaction
+from backend.models.goal import Goal, GoalEntry
 
 CATEGORIES = {
     "Income": "emerald", "Housing": "indigo", "Groceries": "blue", "Dining": "orange",
@@ -68,7 +69,7 @@ def seed_demo(db: Session, as_of: date) -> bool:
     """Called inside one transaction after CLI safeguards. Never replace existing finances."""
     if db.bind.dialect.name == "postgresql":
         db.execute(text("SELECT pg_advisory_xact_lock(71025001)"))
-    if any(db.scalar(select(model.id).limit(1)) is not None for model in (Transaction, Budget, Subscription)):
+    if any(db.scalar(select(model.id).limit(1)) is not None for model in (Transaction, Budget, Subscription, Goal)):
         return False
     for name, color in CATEGORIES.items():
         if db.get(Category, name) is None:
@@ -106,6 +107,17 @@ def seed_demo(db: Session, as_of: date) -> bool:
         db.flush()
         db.add(SubscriptionPayment(subscription_id=subscription.id, due_date=previous,
                                    paid_on=previous, amount=Decimal(price)))
+    for name, kind, target, contributed in [
+        ("Emergency fund", "Savings", "10000", "6800"),
+        ("Japan adventure", "Savings", "4500", "1825"),
+        ("Student loan freedom", "Debt Payoff", "8000", "5600"),
+    ]:
+        goal = Goal(name=name, type=kind, target_amount=Decimal(target))
+        db.add(goal)
+        db.flush()
+        for entry_type, amount in [("income", "5920"), ("expense", "3400"), ("contribution", contributed)]:
+            db.add(GoalEntry(goal_id=goal.id, type=entry_type, date=as_of,
+                             note="Demo starting balance", amount=Decimal(amount)))
     return True
 
 
@@ -121,7 +133,7 @@ def main():
         parser.exit(1, str(error) + "\n")
     with get_session_factory().begin() as db:
         created = seed_demo(db, args.as_of)
-    print("Created demo data: 168 transactions, 42 budgets, 12 categories, 5 subscriptions and payment history."
+    print("Created demo data: 168 transactions, 42 budgets, 12 categories, 5 subscriptions with payments, and 3 goals with entries."
           if created else "Demo database already contains financial records; left unchanged.")
 
 

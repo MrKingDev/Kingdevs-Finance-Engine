@@ -10,7 +10,7 @@ Next.js 16.3.5 App Router, React 19, TypeScript, Tailwind 4, shadcn-style React 
 | `src/components/` | Dashboard, transactions, budgets, charts, settings, tools and shared UI. |
 | `src/lib/` | API helpers, refresh events and data hooks. |
 | `src/types/` | TypeScript API and feature contracts. |
-| `src/data/` | Static feature data and opt-in demo goals. |
+| `src/data/` | Static feature data. |
 | `public/` | Static files served by Next.js. |
 
 ## Development
@@ -43,9 +43,9 @@ Normal workspace, from the repository root: `docker compose up --build -d --wait
 
 Populated demo: `docker compose -f compose.demo.yaml up --build -d --wait --wait-timeout 180`.
 
-Open [localhost:3002/dashboard](http://localhost:3002/dashboard) for the demo. Its API/database are separate from normal data. The demo build sets `NEXT_PUBLIC_DEMO_MODE=true`, shows a banner and initializes three goals from `src/data/demo-goals.ts`. Normal builds default to demo mode off.
+Open [localhost:3002/dashboard](http://localhost:3002/dashboard) for the demo. Its API/database are separate from normal data. The demo build sets `NEXT_PUBLIC_DEMO_MODE=true` and shows a banner. The backend seeds three goals with entries for new demo databases. Normal builds default to demo mode off.
 
-Docker browsers call `/api`; Next rewrites requests to `http://backend:8000`. Public variables are compiled into JavaScript, so changes require a rebuild. Demo goals remain frontend state and reset on reload.
+Docker browsers call `/api`; Next rewrites requests to `http://backend:8000`. Public variables are compiled into JavaScript, so changes require a rebuild. Goals load from `/goals`; creation, deletion and dated entries persist in PostgreSQL. Forms close only after saving succeeds and keep their values on failure.
 
 ## Main data flows
 
@@ -59,6 +59,8 @@ Docker browsers call `/api`; Next rewrites requests to `http://backend:8000`. Pu
 | Downloads | `settings/pages/downloadables.tsx`: month/year selectors, three download buttons, busy/error states. |
 | Categories | Shared saved category names/colors across transactions, budgets, imports, subscriptions and filters. |
 | Subscriptions | Backend CRUD, payments, archive and history through `use-subscriptions.ts`. |
+| Goals | `src/lib/goals-api.ts` and `/goals`: saved goals and dated entries, with progress calculated by the backend. |
+| AI | `/ai` sends the current question to `POST /ai/chat` and displays the reply, loading state or API error. Requires a separately configured Ollama service. |
 
 Shared controls wrap React Aria: selects use `selectedKey`, `onSelectionChange` and item `id`; buttons use `onPress` and `isDisabled`. Check local wrappers before copying examples for another library.
 
@@ -99,6 +101,8 @@ pnpm build
 
 `pnpm lint` checks with Biome; `pnpm format` modifies files. Docker production builds run TypeScript checks. Browser smoke scripts live in `backend/scripts/`; their target environments and prerequisites are documented in the [Docker guide](../DOCKER.md#isolated-verification-stack). There is no frontend unit-test script configured in `package.json`.
 
-The transaction screen uses server pagination. Most analytics still load the full ledger and calculate locally, so very large ledgers would benefit from backend aggregation. Goals and most tools are not persisted; Wish List uses localStorage. There is no authentication or AI backend yet.
+The transaction screen uses server pagination. Most analytics still load the full ledger and calculate locally, so very large ledgers would benefit from backend aggregation. Most planning tools are not persisted; Wish List uses localStorage. There is no authentication.
+
+The AI page accepts questions up to 4,000 characters and shows one reply at a time. It does not send prior messages or financial records, and its state is not persisted. Configure Ollama on the backend using the [local AI instructions](../README.md#local-ai-assistant); no separate frontend AI environment variable is needed.
 
 See the [project README](../README.md), [backend README](../backend/README.md), and [Docker guide](../DOCKER.md).

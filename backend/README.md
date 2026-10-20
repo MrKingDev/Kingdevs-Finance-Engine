@@ -37,6 +37,8 @@ Existing PostgreSQL volumes retain their role password; changing an initializati
 | `POSTGRES_PORT` | Compose host binding / container connection | Template uses host 5433; Compose explicitly supplies internal 5432 to API containers. |
 | `BACKEND_PORT`, `FRONTEND_PORT` | Normal Compose host bindings | Defaults are 8001 and 3001. These do not change the local uvicorn command. |
 | `DEMO_MODE` | Demo seeder | Must be `true` alongside database name `finance_engine_demo` before sample finances can be inserted. |
+| `OLLAMA_BASE_URL` | AI route | Ollama server URL; defaults to `http://127.0.0.1:11434`. Must be reachable from the backend process/container. |
+| `OLLAMA_MODEL` | AI route | Installed Ollama model name; defaults to `qwen3:4b-instruct`. |
 
 `/health` and API documentation work without a database connection. `/health/ready` performs `SELECT 1`; financial endpoints also require the expected migrations. Successful liveness alone does not prove that the database or schema is ready.
 
@@ -55,7 +57,9 @@ Existing PostgreSQL volumes retain their role password; changing an initializati
 | `assets/fonts/` | DejaVu fonts and license; included in Docker. |
 | `seed_demo.py` | Guarded fictional sample data. |
 
-`migrations/` holds revisions 0001 through 0005. `tests/` and `scripts/` provide isolated verification. Runtime dependencies are declared in `pyproject.toml` and locked in `uv.lock`.
+`migrations/` holds revisions 0001 through 0006. `tests/` and `scripts/` provide isolated verification. Runtime dependencies are declared in `pyproject.toml` and locked in `uv.lock`.
+
+Goals use `GET/POST /goals`, `GET/DELETE /goals/{id}`, and `GET/POST /goals/{id}/entries`. Entries retain their type (income, expense or contribution), date, note and positive Decimal amount. Goal responses aggregate progress from saved entries. Deleting a goal also deletes its entries; Clear Data retains both. Goal entries do not create ledger transactions. Apply migration `0006` before starting the updated API.
 
 ## API routes
 
@@ -85,7 +89,21 @@ Paths are relative to the API root; Docker browsers prepend `/api`. There is cur
 | GET | `/exports/periods` | Available report years. |
 | GET | `/exports/transactions.csv?month=10&year=2026` | Monthly spreadsheet report. |
 | GET | `/exports/report.pdf?month=10&year=2026&style=styled` | Styled PDF; use `style=basic` for plain. |
+| GET, POST | `/goals` | List/create savings or debt payoff goals with aggregated progress. |
+| GET, DELETE | `/goals/{id}` | Read/delete a goal; deletion also removes its entries. |
+| GET, POST | `/goals/{id}/entries` | List dated entries / add an entry and return updated goal totals. |
+| POST | `/ai/chat` | Forward a single question to Ollama and return its reply. |
 | DELETE | `/data/clear` | Confirmed deletion of transactions, budgets and categories. |
+
+### Local AI
+
+`POST /ai/chat` accepts `{"message": "How can I organize a monthly budget?"}` and returns `{"reply": "..."}`. Messages must contain 1–4,000 characters; whitespace-only messages return 400. Schema validation failures return 422.
+
+The route uses HTTPX to call Ollama's `/api/chat` with streaming disabled, a 120-second timeout and `num_predict=512`. It sends a system instruction and the current question only. Financial records and conversation history are not included or saved by this route.
+
+Run Ollama separately with the selected model installed. Set `OLLAMA_BASE_URL` and `OLLAMA_MODEL` in the backend process environment to override the defaults. Docker users must explicitly supply them to the backend service; the current Compose files do not forward them or start Ollama. Inside a container, `127.0.0.1` refers to that container.
+
+Connection failures return 503, timeouts return 504, and upstream HTTP errors or invalid replies return 502. Other finance features do not require Ollama.
 
 ### Transaction pages
 
@@ -143,7 +161,7 @@ Imports are synchronous worker-thread requests, not durable jobs. The Docker Nex
 
 ## Downloads
 
-Exports select the requested month's transactions, join current category colors and calculate Decimal income, expenses, net cash flow and category spending. Subscription estimates, browser goals and planning values are not ledger transactions.
+Exports select the requested month's transactions, join current category colors and calculate Decimal income, expenses, net cash flow and category spending. Subscription estimates, goal entries and planning values are not ledger transactions.
 
 Styled PDFs match the supplied US Letter example: navy header, DejaVu Sans, three white summary cards, expense doughnut and transaction count. The cover shows up to six legend entries; smaller categories can be grouped visually while full category and transaction details follow.
 
@@ -193,6 +211,7 @@ uv run python -B -m unittest discover -s tests -q
 | test_exports | Parsed PDF content/pagination, financial totals, CSV safety and directions. |
 | test_demo | Database safeguards, fixture integrity, atomicity and reruns. |
 | test_transaction_pages | Page boundaries, ordering, filtering, empty pages and deletion. |
+| test_goals | Goal and entry validation, persistence, aggregated totals, deletion and Clear Data retention. |
 
 Tests use disposable SQLite databases. `pypdf` is dev-only for assertions; production uses ReportLab without dev dependencies. PostgreSQL integration and browser checks are documented in [DOCKER.md](../DOCKER.md).
 

@@ -76,7 +76,7 @@ Run `docker compose -f compose.demo.yaml up --build -d --wait --wait-timeout 180
 
 This standalone Compose file does not include the normal configuration. Project `finance-engine-demo` uses database `finance_engine_demo`, volume `finance-engine-demo_demo_postgres_data`, and separate images, network and demo-only credentials. PostgreSQL has no published demo host port. Override `DEMO_FRONTEND_PORT` or `DEMO_BACKEND_PORT` if needed; published ports bind to loopback.
 
-Startup order: database health → migrations → guarded seeder → backend readiness → frontend. The seed inserts 168 fictional transactions across six months, 42 budgets, 12 categories, five subscriptions and five payment records only when financial tables are empty. Reruns preserve edits and do not duplicate rows. The demo frontend shows a banner and three example goals; normal builds default to demo mode off.
+Startup order: database health → migrations → guarded seeder → backend readiness → frontend. The seed inserts 168 fictional transactions across six months, 42 budgets, 12 categories, five subscriptions, five payment records and three goals with nine entries only when financial tables are empty. Reruns preserve edits and do not duplicate rows. Existing demo databases are not backfilled with goals. The demo frontend shows a banner; normal builds default to demo mode off.
 
 `docker compose -f compose.demo.yaml down` retains sample data. To deliberately discard **only demo data** and seed fresh dates, run `docker compose -f compose.demo.yaml down --volumes`, then start the demo again. Keep the explicit demo file argument; never remove normal application volumes casually.
 

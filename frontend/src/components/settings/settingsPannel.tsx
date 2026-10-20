@@ -99,7 +99,7 @@ const tabOptions = [
           <CardTitle>CLEAR DATA</CardTitle>
           <CardDescription>
             This permanently deletes saved transactions, budgets, and
-            categories. Browser-only goals and tools are unaffected. Restarting
+            categories. Goals, their entries and browser-only tools are unaffected. Restarting
             the backend does not restore deleted data.
           </CardDescription>
         </CardHeader>

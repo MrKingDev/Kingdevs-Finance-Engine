@@ -26,7 +26,13 @@ const incomeExpenseChartConfig = {
 const AreaChartDisplay = ({ year }: { year: number }) => {
   const { data: chartData, loading, error } = useIncomeExpenseChart(year);
 
-  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
+  if (error) {
+    return (
+      <p role="alert" className="text-sm text-destructive">
+        {error}
+      </p>
+    );
+  }
 
   if (loading) {
     return (
@@ -41,33 +47,43 @@ const AreaChartDisplay = ({ year }: { year: number }) => {
       config={incomeExpenseChartConfig}
       className="aspect-auto h-62.5 w-full"
     >
-      <AreaChart data={chartData}>
+      <AreaChart
+        data={chartData}
+        margin={{
+          top: 10,
+          right: 0,
+          left: 0,
+          bottom: 0,
+        }}
+      >
         <defs>
+          {/* Income gradient */}
           <linearGradient id="fillIncome" x1="0" y1="0" x2="0" y2="1">
             <stop
               offset="5%"
               stopColor="var(--color-income)"
-              stopOpacity={0.8}
+              stopOpacity={0.5}
             />
 
             <stop
               offset="95%"
               stopColor="var(--color-income)"
-              stopOpacity={0.1}
+              stopOpacity={0.05}
             />
           </linearGradient>
 
+          {/* Expenses gradient */}
           <linearGradient id="fillExpenses" x1="0" y1="0" x2="0" y2="1">
             <stop
               offset="5%"
               stopColor="var(--color-expenses)"
-              stopOpacity={0.8}
+              stopOpacity={0.5}
             />
 
             <stop
               offset="95%"
               stopColor="var(--color-expenses)"
-              stopOpacity={0.1}
+              stopOpacity={0.05}
             />
           </linearGradient>
         </defs>
@@ -92,6 +108,7 @@ const AreaChartDisplay = ({ year }: { year: number }) => {
           axisLine={false}
           tickMargin={8}
           width={60}
+          domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
           tickFormatter={(value) =>
             `$${Number(value).toLocaleString("en-US", {
               notation: "compact",
@@ -113,7 +130,11 @@ const AreaChartDisplay = ({ year }: { year: number }) => {
               }
               formatter={(value, name) => (
                 <div className="flex w-full items-center justify-between gap-4">
-                  <span className="capitalize">{name}</span>
+                  <span className="capitalize">
+                    {incomeExpenseChartConfig[
+                      name as keyof typeof incomeExpenseChartConfig
+                    ]?.label ?? name}
+                  </span>
 
                   <span className="font-mono font-medium">
                     $
@@ -130,18 +151,22 @@ const AreaChartDisplay = ({ year }: { year: number }) => {
 
         <Area
           dataKey="income"
-          type="natural"
+          type="monotone"
+          baseValue={0}
           fill="url(#fillIncome)"
           stroke="var(--color-income)"
-          fillOpacity={0.4}
+          strokeWidth={2}
+          fillOpacity={1}
         />
 
         <Area
           dataKey="expenses"
-          type="natural"
+          type="monotone"
+          baseValue={0}
           fill="url(#fillExpenses)"
           stroke="var(--color-expenses)"
-          fillOpacity={0.4}
+          strokeWidth={2}
+          fillOpacity={1}
         />
 
         <ChartLegend content={<ChartLegendContent />} />

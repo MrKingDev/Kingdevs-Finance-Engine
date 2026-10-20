@@ -8,7 +8,6 @@ import PageTransition from "@/components/pageTransitions";
 import { Button } from "@/components/ui/button";
 
 import {
-  Plus,
   CircleDollarSign,
   ArrowDownLeft,
   ArrowUpRight,
@@ -29,6 +28,7 @@ import {
 import {
   Card,
   CardContent,
+  CardAction,
   CardHeader,
   CardDescription,
   CardTitle,
@@ -304,39 +304,38 @@ const Dashboard = () => {
           {/* Income vs Expenses */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Income vs Expenses</CardTitle>
+              <CardTitle>Income vs Expenses</CardTitle>
 
-                <CardDescription>{selectedYear}</CardDescription>
-              </div>
+              <CardDescription>{selectedYear}</CardDescription>
+              <CardAction>
+                <RadioGroup
+                  value={chartType}
+                  onChange={(value) => {
+                    if (value === "area" || value === "bar") {
+                      setChartType(value);
+                    }
+                  }}
+                  orientation="horizontal"
+                  aria-label="Chart type"
+                  className="flex items-center gap-4"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="area" id="chart-area" />
 
-              <RadioGroup
-                value={chartType}
-                onChange={(value) => {
-                  if (value === "area" || value === "bar") {
-                    setChartType(value);
-                  }
-                }}
-                orientation="horizontal"
-                aria-label="Chart type"
-                className="flex items-center gap-4"
-              >
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="area" id="chart-area" />
+                    <Label htmlFor="chart-area" className="cursor-pointer">
+                      Area
+                    </Label>
+                  </div>
 
-                  <Label htmlFor="chart-area" className="cursor-pointer">
-                    Area
-                  </Label>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="bar" id="chart-bar" />
 
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="bar" id="chart-bar" />
-
-                  <Label htmlFor="chart-bar" className="cursor-pointer">
-                    Bar
-                  </Label>
-                </div>
-              </RadioGroup>
+                    <Label htmlFor="chart-bar" className="cursor-pointer">
+                      Bar
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </CardAction>
             </CardHeader>
 
             <CardContent>

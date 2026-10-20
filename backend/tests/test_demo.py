@@ -8,7 +8,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from backend.database import Base
-from backend.models import Budget, Category, Subscription, SubscriptionPayment, Transaction
+from backend.models import Budget, Category, Goal, GoalEntry, Subscription, SubscriptionPayment, Transaction
 from backend.seed_demo import assert_demo_database, seed_demo
 from backend.services.exports import monthly_report
 
@@ -35,7 +35,7 @@ class DemoTests(unittest.TestCase):
             self.assertTrue(seed_demo(db, date(2026, 10, 5)))
         with Session(self.engine) as db, db.begin():
             self.assertFalse(seed_demo(db, date(2026, 11, 5)))
-            for model, count in [(Transaction, 168), (Category, 12), (Budget, 42), (Subscription, 5), (SubscriptionPayment, 5)]:
+            for model, count in [(Transaction, 168), (Category, 12), (Budget, 42), (Subscription, 5), (SubscriptionPayment, 5), (Goal, 3), (GoalEntry, 9)]:
                 self.assertEqual(db.scalar(select(func.count()).select_from(model)), count)
             report = monthly_report(db, 2026, 10)
             self.assertEqual(len(report.transactions), 28)

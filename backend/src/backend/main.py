@@ -13,6 +13,8 @@ from .routes.imports import router as imports_router
 from .routes.rules import router as rules_router
 from .routes.subscriptions import router as subscriptions_router
 from .routes.exports import router as exports_router
+from .routes.goals import router as goals_router
+from .routes.ai import router as ai_router
 
 app = FastAPI(
     title="KingDev's Finance Engine API",
@@ -39,6 +41,9 @@ app.include_router(imports_router)
 app.include_router(rules_router)
 app.include_router(subscriptions_router)
 app.include_router(exports_router)
+app.include_router(goals_router)
+app.include_router(ai_router)
+
 
 @app.get("/")
 def root():

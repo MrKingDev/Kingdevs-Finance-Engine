@@ -5,6 +5,17 @@ import { useState } from "react";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
 
 const ClearData = () => {
@@ -51,8 +62,9 @@ const ClearData = () => {
   return (
     <>
       <p className="mb-4 text-sm text-muted-foreground">
-        Clears transactions, budgets, and categories. Subscriptions, payment history,
-        and import rules are kept; their category selections are cleared.
+        Clears transactions, budgets, and categories. Subscriptions, payment
+        history, and import rules are kept; their category selections are
+        cleared.
       </p>
       <Field>
         <FieldLabel htmlFor="clearData">Type CLEAR to confirm</FieldLabel>
@@ -65,14 +77,31 @@ const ClearData = () => {
           autoComplete="off"
         />
       </Field>
-      <Button
-        variant="destructive"
-        className="mt-4"
-        onPress={handleClearData}
-        isDisabled={confirmation !== "CLEAR" || isClearing}
-      >
-        {isClearing ? "Clearing..." : "Clear Data"}
-      </Button>
+      {/* Delete data Button */}
+      <AlertDialogTrigger>
+        <Button variant="destructive" className="mt-4">
+          {isClearing ? "Clearing..." : "Clear Data"}
+        </Button>
+        <AlertDialog>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete all
+              data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Never Mind</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              isDisabled={confirmation !== "CLEAR" || isClearing}
+              onPress={handleClearData}
+            >
+              Clear Data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialog>
+      </AlertDialogTrigger>
 
       {message && (
         <output className="mt-2 block text-sm text-muted-foreground">

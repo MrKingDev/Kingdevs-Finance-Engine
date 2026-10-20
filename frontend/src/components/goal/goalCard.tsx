@@ -1,26 +1,11 @@
 "use client";
 
-import { Trash, Plus } from "lucide-react";
-
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardDescription,
-  CardTitle,
-} from "@/components/ui/card";
-
-import {
-  Dialog,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
+import { format } from "date-fns";
+import { Plus, Trash } from "lucide-react";
+import { type FormEvent, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -28,9 +13,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-import { toast } from "sonner";
-
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { DatePickerInput } from "@/components/ui/date-picker";
+import {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -39,30 +40,88 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { DatePickerInput } from "@/components/ui/date-picker";
-
-export type Goal = {
-  id: number;
-  name: string;
-  type: "Savings" | "Debt Payoff";
-  targetAmount: number;
-  targetDate?: string;
-  contributed: number;
-  documentedIncome: number;
-  necessaryExpenses: number;
-};
+import { addGoalEntry, type Goal, type GoalEntryInput } from "@/lib/goals-api";
 
 interface GoalCardProps {
   goal: Goal;
-  onDelete: (id: number) => void;
+  onDelete: (id: number) => Promise<void>;
+  onUpdate: (goal: Goal) => void;
 }
 
-const GoalCard = ({ goal, onDelete }: GoalCardProps) => {
+const GoalCard = ({ goal, onDelete, onUpdate }: GoalCardProps) => {
+  const [entryOpen, setEntryOpen] = useState(false);
+  const [entryType, setEntryType] =
+    useState<GoalEntryInput["type"]>("contribution");
+  const [entryDate, setEntryDate] = useState(() =>
+    format(new Date(), "yyyy-MM-dd"),
+  );
+  const [note, setNote] = useState("");
+  const [amount, setAmount] = useState("");
+  const [entryError, setEntryError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleAddEntry = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (savingRef.current) return;
+    setEntryError(null);
+    if (
+      !entryDate ||
+      !amount ||
+      !Number.isFinite(Number(amount)) ||
+      Number(amount) <= 0
+    ) {
+      setEntryError("Choose a date and enter an amount greater than zero.");
+      return;
+    }
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const saved = await addGoalEntry(goal.id, {
+        type: entryType,
+        date: entryDate,
+        note,
+        amount,
+      });
+      onUpdate(saved);
+      setEntryOpen(false);
+      setEntryType("contribution");
+      setEntryDate(format(new Date(), "yyyy-MM-dd"));
+      setNote("");
+      setAmount("");
+      toast.success("Entry saved");
+    } catch (error) {
+      setEntryError(
+        error instanceof Error ? error.message : "Unable to save entry.",
+      );
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deletingRef.current) return;
+    deletingRef.current = true;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await onDelete(goal.id);
+      setDeleteOpen(false);
+      toast.success("Goal deleted");
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error ? error.message : "Unable to delete goal.",
+      );
+    } finally {
+      deletingRef.current = false;
+      setDeleting(false);
+    }
+  };
   // -----------------------------
   // Calculations
   // -----------------------------
@@ -115,31 +174,46 @@ const GoalCard = ({ goal, onDelete }: GoalCardProps) => {
 
         {/* Delete Goal */}
         <CardAction className="shrink-0">
-          <AlertDialogTrigger>
-            <Button variant="destructive" size="icon">
+          <AlertDialogTrigger
+            isOpen={deleteOpen}
+            onOpenChange={(open) => {
+              if (!deletingRef.current) {
+                setDeleteOpen(open);
+                setDeleteError(null);
+              }
+            }}
+          >
+            <Button
+              variant="destructive"
+              size="icon"
+              aria-label={`Delete ${goal.name}`}
+            >
               <Trash className="size-4" />
             </Button>
-            <AlertDialog>
+            <AlertDialog isKeyboardDismissDisabled={deleting}>
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete
-                  {goal.name}.
+                  This action cannot be undone. This will permanently delete{" "}
+                  {goal.name} and its entries.
                 </AlertDialogDescription>
               </AlertDialogHeader>
+              {deleteError && (
+                <p role="alert" className="text-sm text-destructive">
+                  {deleteError}
+                </p>
+              )}
               <AlertDialogFooter>
-                <AlertDialogCancel>Never Mind</AlertDialogCancel>
-                <AlertDialogAction
+                <AlertDialogCancel isDisabled={deleting}>
+                  Never Mind
+                </AlertDialogCancel>
+                <Button
                   variant="destructive"
-                  onClick={() => {
-                    onDelete(goal.id);
-                    toast("Goal has been deleted", {
-                      position: "bottom-right",
-                    });
-                  }}
+                  isDisabled={deleting}
+                  onClick={handleDelete}
                 >
-                  Delete
-                </AlertDialogAction>
+                  {deleting ? "Deleting..." : "Delete"}
+                </Button>
               </AlertDialogFooter>
             </AlertDialog>
           </AlertDialogTrigger>
@@ -205,76 +279,130 @@ const GoalCard = ({ goal, onDelete }: GoalCardProps) => {
           </div>
         </div>
 
-        <DialogTrigger>
+        <DialogTrigger
+          isOpen={entryOpen}
+          onOpenChange={(open) => {
+            if (!savingRef.current) {
+              setEntryOpen(open);
+              setEntryError(null);
+            }
+          }}
+        >
           <Button className="w-full">
             {" "}
             <Plus />
             Add Entry
           </Button>
-          <Dialog>
+          <Dialog
+            isDismissable={!saving}
+            isKeyboardDismissDisabled={saving}
+            showCloseButton={!saving}
+          >
             <DialogHeader>
               <DialogTitle>Entry</DialogTitle>
             </DialogHeader>
-            <div>
-              <Field className="min-w-0">
-                <FieldLabel>Entry Type</FieldLabel>
+            <form onSubmit={handleAddEntry}>
+              <fieldset disabled={saving}>
+                <Field className="min-w-0">
+                  <FieldLabel>Entry Type</FieldLabel>
 
-                <Select placeholder="Select Type">
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <Select
+                    aria-label="Entry Type"
+                    value={entryType}
+                    onChange={(value) => {
+                      if (
+                        value === "income" ||
+                        value === "expense" ||
+                        value === "contribution"
+                      )
+                        setEntryType(value);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
 
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem id="income">
-                        Income Available for Goal
-                      </SelectItem>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem id="income">
+                          Income Available for Goal
+                        </SelectItem>
 
-                      <SelectItem id="expense">Necessary Expense</SelectItem>
+                        <SelectItem id="expense">Necessary Expense</SelectItem>
 
-                      <SelectItem id="contribution">
-                        Contribution / Debt Payment
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
+                        <SelectItem id="contribution">
+                          Contribution / Debt Payment
+                        </SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
 
-              {/* Date */}
-              <Field className="min-w-0 mt-2">
-                <FieldLabel>Date</FieldLabel>
+                {/* Date */}
+                <Field className="min-w-0 mt-2">
+                  <FieldLabel htmlFor={`entry-date-${goal.id}-input`}>
+                    Date
+                  </FieldLabel>
 
-                <DatePickerInput className="w-full" />
-              </Field>
+                  <DatePickerInput
+                    id={`entry-date-${goal.id}`}
+                    className="w-full"
+                    value={entryDate}
+                    onChange={setEntryDate}
+                  />
+                </Field>
 
-              {/* Note */}
-              <Field className="min-w-0 mt-2">
-                <FieldLabel>Note</FieldLabel>
+                {/* Note */}
+                <Field className="min-w-0 mt-2">
+                  <FieldLabel htmlFor={`entry-note-${goal.id}`}>
+                    Note
+                  </FieldLabel>
 
-                <Input
-                  type="text"
-                  placeholder="Paycheck, rent, transfer..."
-                  className="w-full"
-                />
-              </Field>
+                  <Input
+                    id={`entry-note-${goal.id}`}
+                    type="text"
+                    maxLength={500}
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    placeholder="Paycheck, rent, transfer..."
+                    className="w-full"
+                  />
+                </Field>
 
-              {/* Amount */}
-              <Field className="min-w-0 mt-2">
-                <FieldLabel>Amount</FieldLabel>
+                {/* Amount */}
+                <Field className="min-w-0 mt-2">
+                  <FieldLabel htmlFor={`entry-amount-${goal.id}`}>
+                    Amount
+                  </FieldLabel>
 
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  className="w-full"
-                />
-              </Field>
-              <Button className="w-full mt-4">
-                <Plus />
-                Add Entry
-              </Button>
-            </div>
+                  <Input
+                    id={`entry-amount-${goal.id}`}
+                    type="number"
+                    min="0.01"
+                    max="9999999999.99"
+                    step="0.01"
+                    required
+                    value={amount}
+                    onChange={(event) => setAmount(event.target.value)}
+                    placeholder="0.00"
+                    className="w-full"
+                  />
+                </Field>
+                {entryError && (
+                  <p role="alert" className="mt-3 text-sm text-destructive">
+                    {entryError}
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  className="w-full mt-4"
+                  isDisabled={saving}
+                >
+                  <Plus />
+                  {saving ? "Saving..." : "Add Entry"}
+                </Button>
+              </fieldset>
+            </form>
           </Dialog>
         </DialogTrigger>
       </CardContent>
