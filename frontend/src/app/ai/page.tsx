@@ -5,9 +5,12 @@ import PageTransition from "@/components/pageTransitions";
 import { DatePickerInput } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 import { API_URL, apiError } from "@/lib/finance-api";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 export default function AI() {
-  const [period, setPeriod] = useState(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`; });
+  const { today } = useRegionalFormat();
+  const [chosenPeriod, setPeriod] = useState<string | null>(null);
+  const period = chosenPeriod ?? `${today().slice(0, 7)}-01`;
   const [coverage, setCoverage] = useState("");
   const [message, setMessage] = useState("");
   const [reply, setReply] = useState("");

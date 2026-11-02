@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Archive, CalendarDays, CreditCard, DollarSign, History, Pencil, Plus, RefreshCcw, Trash2 } from "lucide-react";
@@ -31,10 +32,7 @@ const emptyForm: SubscriptionForm = {
   name: "", amount: "", billing_cycle: "monthly", next_due_date: "",
   category: null, payment_method_label: "", icon: null,
 };
-const currency = (value: string) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value));
-const formatDate = (value: string) => new Intl.DateTimeFormat("en-US", {
-  month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
-}).format(new Date(value + "T00:00:00Z"));
+
 const statusLabels = { overdue: "Overdue", due_today: "Due today", upcoming: "Upcoming", archived: "Archived" };
 
 async function request(path: string, method: string, body?: unknown) {
@@ -49,6 +47,7 @@ async function request(path: string, method: string, body?: unknown) {
 }
 
 export default function SubscriptionTracker() {
+  const { formatCurrency: currency, formatDate, currencyCode, today } = useRegionalFormat();
   const [includeArchived, setIncludeArchived] = useState(false);
   const { data, loading, error, refresh } = useSubscriptions(includeArchived);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -192,7 +191,7 @@ export default function SubscriptionTracker() {
           <Button size="sm" variant={includeArchived ? "secondary" : "outline"} className="w-fit" aria-pressed={includeArchived} onPress={() => setIncludeArchived((value) => !value)}>Show archived subscriptions</Button>
         </CardHeader>
         <CardContent>
-          {loading && <p role="status" className="mb-3 text-sm text-muted-foreground">Loading subscriptions…</p>}
+          {loading && <output className="mb-3 block text-sm text-muted-foreground">Loading subscriptions…</output>}
           <Table aria-label="Saved subscriptions" className="min-w-[1000px]">
             <TableHeader>
               <TableHead isRowHeader>Name</TableHead><TableHead>Cost</TableHead><TableHead>Category</TableHead>
@@ -217,7 +216,7 @@ export default function SubscriptionTracker() {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       {item.is_active && <Button size="sm" variant="outline" isDisabled={busy} onPress={() => {
-                        setPaying(item); setPayment({ amount: item.amount, paid_on: summary?.as_of_date ?? new Date().toISOString().slice(0, 10) }); setPaymentError("");
+                        setPaying(item); setPayment({ amount: item.amount, paid_on: summary?.as_of_date ?? today() }); setPaymentError("");
                       }}>Record payment</Button>}
                       <Button size="icon-sm" variant="ghost" aria-label={"Edit " + item.name} isDisabled={busy} onPress={() => openForm(item)}><Pencil className="size-4" /></Button>
                       <Button size="icon-sm" variant="ghost" aria-label={"Payment history for " + item.name} isDisabled={busy} onPress={() => showHistory(item)}><History className="size-4" /></Button>
@@ -237,7 +236,7 @@ export default function SubscriptionTracker() {
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-2"><Label htmlFor="subscription-name">Name</Label><Input id="subscription-name" required maxLength={120} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Music service" /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2"><Label htmlFor="subscription-amount">Amount (USD)</Label><Input id="subscription-amount" required type="number" min="0.01" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></div>
+            <div className="space-y-2"><Label htmlFor="subscription-amount">Amount ({currencyCode})</Label><Input id="subscription-amount" required type="number" min="0.01" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></div>
             <Select aria-label="Billing cycle" className="w-full" selectedKey={form.billing_cycle} onSelectionChange={(key) => { if (key === "monthly" || key === "annual") setForm({ ...form, billing_cycle: key }); }}>
               <Label>Billing cycle</Label><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem id="monthly">Monthly</SelectItem><SelectItem id="annual">Annual</SelectItem></SelectContent>
             </Select>
@@ -257,7 +256,7 @@ export default function SubscriptionTracker() {
         <DialogHeader><DialogTitle>Record payment</DialogTitle><DialogDescription>{paying?.name} · Due {paying ? formatDate(paying.next_due_date) : ""}. This records a payment you made; it does not charge your card or add an expense to Transactions.</DialogDescription></DialogHeader>
         <form onSubmit={recordPayment} className="space-y-4">
           <div className="space-y-2"><Label htmlFor="subscription-paid-on">Paid on (UTC date)</Label><Input id="subscription-paid-on" type="date" required max={summary?.as_of_date} value={payment.paid_on} onChange={(e) => setPayment({ ...payment, paid_on: e.target.value })} /></div>
-          <div className="space-y-2"><Label htmlFor="subscription-paid-amount">Amount paid (USD)</Label><Input id="subscription-paid-amount" type="number" required min="0.01" step="0.01" value={payment.amount} onChange={(e) => setPayment({ ...payment, amount: e.target.value })} /></div>
+          <div className="space-y-2"><Label htmlFor="subscription-paid-amount">Amount paid ({currencyCode})</Label><Input id="subscription-paid-amount" type="number" required min="0.01" step="0.01" value={payment.amount} onChange={(e) => setPayment({ ...payment, amount: e.target.value })} /></div>
           {paymentError && <p role="alert" className="text-sm text-destructive">{paymentError}</p>}
           <DialogFooter><Button type="button" variant="outline" isDisabled={busy} onPress={() => setPaying(null)}>Cancel</Button><Button type="submit" isDisabled={busy}>{busy ? "Saving…" : "Confirm payment"}</Button></DialogFooter>
         </form>

@@ -16,6 +16,7 @@ from .routes.exports import router as exports_router
 from .routes.goals import router as goals_router
 from .routes.ai import router as ai_router
 from .routes.banks import router as banks_router
+from .routes.preferences import router as preferences_router
 
 app = FastAPI(
     title="KingDev's Finance Engine API",
@@ -45,6 +46,7 @@ app.include_router(exports_router)
 app.include_router(goals_router)
 app.include_router(ai_router)
 app.include_router(banks_router)
+app.include_router(preferences_router)
 
 
 @app.get("/")

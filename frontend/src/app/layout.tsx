@@ -1,4 +1,5 @@
 import { BankProvider } from "@/components/banks/bankProvider";
+import { PreferencesProvider } from "@/components/preferences/preferencesProvider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, DM_Sans, Nunito_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
+          <PreferencesProvider>
           <BankProvider>
           <div className="flex min-h-dvh w-full overflow-hidden">
             <Header />
@@ -66,6 +68,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Toaster />
           </div>
           </BankProvider>
+          </PreferencesProvider>
         </ThemeProvider>
       </body>
     </html>

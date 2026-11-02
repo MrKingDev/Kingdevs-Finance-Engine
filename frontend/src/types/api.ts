@@ -5,7 +5,7 @@ export type SubscriptionResponse = {
   id: number;
   name: string;
   amount: string;
-  currency: "USD";
+  currency: string;
   billing_cycle: "monthly" | "annual";
   next_due_date: string;
   following_due_date: string;
@@ -33,7 +33,7 @@ export type SubscriptionPayment = {
 export type SubscriptionOverview = {
   items: SubscriptionResponse[];
   summary: {
-    currency: "USD";
+    currency: string;
     as_of_date: string;
     active_count: number;
     overdue_count: number;

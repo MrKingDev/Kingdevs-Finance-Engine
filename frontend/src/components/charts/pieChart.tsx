@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import * as React from "react";
 import { Label as RechartsLabel, Pie, PieChart } from "recharts";
@@ -31,6 +32,7 @@ const spendingChartConfig = {
 } satisfies ChartConfig;
 
 const PieChartDisplay = ({ month, year }: PieChartDisplayProps) => {
+  const { formatCurrency } = useRegionalFormat();
   const {
     data: transactions,
     loading,
@@ -108,11 +110,7 @@ const PieChartDisplay = ({ month, year }: PieChartDisplayProps) => {
                     <span className="capitalize">{name}</span>
 
                     <span className="font-mono font-medium tabular-nums">
-                      $
-                      {Number(value).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatCurrency(Number(value))}
                     </span>
                   </div>
                 </div>
@@ -144,11 +142,7 @@ const PieChartDisplay = ({ month, year }: PieChartDisplayProps) => {
                       y={viewBox.cy}
                       className="fill-foreground text-2xl font-bold"
                     >
-                      $
-                      {totalSpending.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatCurrency(totalSpending)}
                     </tspan>
 
                     <tspan

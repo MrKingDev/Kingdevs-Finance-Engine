@@ -18,6 +18,7 @@ import Downloadables from "./pages/downloadables";
 import Imports from "./pages/imports";
 import LocalAISettings from "./pages/localAI";
 import ImportRules from "./pages/rules";
+import RegionalSettings from "./pages/regionalPreferences";
 
 const tabOptions = [
   {
@@ -28,11 +29,14 @@ const tabOptions = [
         <CardHeader>
           <CardTitle>Preferences</CardTitle>
           <CardDescription>
-            Manage your banks and personalize their badge colors.
+            Set your region, currency and time zone, and manage your banks.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-8">
+          <RegionalSettings />
+          <div className="border-t pt-6"><h3 className="mb-4 font-semibold">Banks</h3>
           <BanksSettings />
+          </div>
         </CardContent>
       </Card>
     ),

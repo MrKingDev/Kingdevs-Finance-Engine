@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import { Pencil, Trash2 } from "lucide-react";
 
@@ -41,14 +42,6 @@ interface TransactionsTableProps {
   onEdit: (transaction: Transaction) => void;
 }
 
-// Format YYYY-MM-DD -> MM/DD/YYYY
-
-const formatDate = (date: string) => {
-  const [year, month, day] = date.split("-");
-
-  return `${month}/${day}/${year}`;
-};
-
 // Transaction Component
 
 const TransactionsTable = ({
@@ -63,6 +56,7 @@ const TransactionsTable = ({
   onClearFilters,
   onEdit,
 }: TransactionsTableProps) => {
+  const { currencyFormatter, formatDate } = useRegionalFormat();
   // State
 
   const filters = new URLSearchParams();
@@ -135,11 +129,6 @@ const TransactionsTable = ({
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Currency formatter
-
-  const currencyFormatter = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
 
   // Delete transaction
 
@@ -321,7 +310,6 @@ const TransactionsTable = ({
                       onPress={() => onEdit(transaction)}
                     >
                       <Pencil className="size-4" />
-                      Edit
                     </Button>
                     <AlertDialogTrigger>
                       <Button

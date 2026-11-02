@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import * as React from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -23,6 +24,7 @@ type SplitCategory = {
 };
 
 export default function PaycheckSplitter() {
+  const { formatCurrency, currencySymbol } = useRegionalFormat();
   const [paycheck, setPaycheck] = React.useState("");
 
   // Tithes
@@ -133,12 +135,7 @@ export default function PaycheckSplitter() {
     return amountAfterTithes * (percentage / 100);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+
 
   return (
     <Card className="w-full">
@@ -157,7 +154,7 @@ export default function PaycheckSplitter() {
 
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              $
+              {currencySymbol}
             </span>
 
             <Input

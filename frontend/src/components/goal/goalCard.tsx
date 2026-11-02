@@ -1,6 +1,6 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
-import { format } from "date-fns";
 import { Plus, Trash } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -49,12 +49,12 @@ interface GoalCardProps {
 }
 
 const GoalCard = ({ goal, onDelete, onUpdate }: GoalCardProps) => {
+  const { formatCurrency, formatDate, today } = useRegionalFormat();
   const [entryOpen, setEntryOpen] = useState(false);
   const [entryType, setEntryType] =
     useState<GoalEntryInput["type"]>("contribution");
-  const [entryDate, setEntryDate] = useState(() =>
-    format(new Date(), "yyyy-MM-dd"),
-  );
+  const [chosenEntryDate, setEntryDate] = useState<string | null>(null);
+  const entryDate = chosenEntryDate ?? today();
   const [note, setNote] = useState("");
   const [amount, setAmount] = useState("");
   const [entryError, setEntryError] = useState<string | null>(null);
@@ -90,7 +90,7 @@ const GoalCard = ({ goal, onDelete, onUpdate }: GoalCardProps) => {
       onUpdate(saved);
       setEntryOpen(false);
       setEntryType("contribution");
-      setEntryDate(format(new Date(), "yyyy-MM-dd"));
+      setEntryDate(null);
       setNote("");
       setAmount("");
       toast.success("Entry saved");
@@ -143,11 +143,7 @@ const GoalCard = ({ goal, onDelete, onUpdate }: GoalCardProps) => {
   // -----------------------------
 
   const formattedTargetDate = goal.targetDate
-    ? new Date(`${goal.targetDate}T00:00:00`).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
+    ? formatDate(goal.targetDate)
     : null;
 
   return (
@@ -225,11 +221,11 @@ const GoalCard = ({ goal, onDelete, onUpdate }: GoalCardProps) => {
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-4 text-sm">
             <p className="text-muted-foreground">
-              ${goal.contributed.toFixed(2)}
+              {formatCurrency(goal.contributed)}
             </p>
 
             <p className="shrink-0 font-medium">
-              ${goal.targetAmount.toFixed(2)} target
+              {formatCurrency(goal.targetAmount)} target
             </p>
           </div>
 
@@ -247,7 +243,7 @@ const GoalCard = ({ goal, onDelete, onUpdate }: GoalCardProps) => {
             <CardDescription>Documented income</CardDescription>
 
             <p className="mt-1 text-lg font-semibold">
-              ${goal.documentedIncome.toFixed(2)}
+              {formatCurrency(goal.documentedIncome)}
             </p>
           </div>
 
@@ -256,7 +252,7 @@ const GoalCard = ({ goal, onDelete, onUpdate }: GoalCardProps) => {
             <CardDescription>Necessary expenses</CardDescription>
 
             <p className="mt-1 text-lg font-semibold">
-              ${goal.necessaryExpenses.toFixed(2)}
+              {formatCurrency(goal.necessaryExpenses)}
             </p>
           </div>
 
@@ -265,7 +261,7 @@ const GoalCard = ({ goal, onDelete, onUpdate }: GoalCardProps) => {
             <CardDescription>Available to contribute</CardDescription>
 
             <p className="mt-1 text-lg font-semibold">
-              ${availableToContribute.toFixed(2)}
+              {formatCurrency(availableToContribute)}
             </p>
           </div>
 
@@ -274,7 +270,7 @@ const GoalCard = ({ goal, onDelete, onUpdate }: GoalCardProps) => {
             <CardDescription>Remaining target</CardDescription>
 
             <p className="mt-1 text-lg font-semibold">
-              ${remainingTarget.toFixed(2)}
+              {formatCurrency(remainingTarget)}
             </p>
           </div>
         </div>

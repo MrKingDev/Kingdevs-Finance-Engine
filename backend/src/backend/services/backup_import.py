@@ -41,6 +41,7 @@ def identity(table, row):
     # Names/settings and one-per-period records retain their current values.
     fields = {
         "categories": ("name",), "bank_styles": ("name",),
+        "preferences": ("id",),
         "budgets": ("month", "year", "category"),
         "transaction_rules": ("match_text",),
         "goals": ("name", "type"),
@@ -113,7 +114,7 @@ def merge_backup(db: Session, backup: BackupFile):
             rows = plan.inserts[table.name]
             for start in range(0, len(rows), 1000):
                 db.execute(insert(table), rows[start:start + 1000])
-            if rows and "id" in table.c and db.get_bind().dialect.name == "postgresql":
+            if rows and "id" in table.c and table.name != "preferences" and db.get_bind().dialect.name == "postgresql":
                 # Explicit remapped IDs must not collide with the next ordinary
                 # insert. Never move an existing sequence backwards.
                 db.execute(text(

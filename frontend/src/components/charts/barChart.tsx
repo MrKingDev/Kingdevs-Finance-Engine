@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import { useIncomeExpenseChart } from "@/lib/use-income-expense-chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -24,6 +25,7 @@ const incomeExpenseChartConfig = {
 } satisfies ChartConfig;
 
 const BarChartDisplay = ({ year }: { year: number }) => {
+  const { formatCurrency, formatCompactCurrency, locale } = useRegionalFormat();
   const { data: chartData, loading, error } = useIncomeExpenseChart(year);
 
   if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
@@ -51,7 +53,7 @@ const BarChartDisplay = ({ year }: { year: number }) => {
           tickMargin={8}
           minTickGap={32}
           tickFormatter={(value) =>
-            new Date(`${value}T00:00:00`).toLocaleDateString("en-US", {
+            new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
               month: "short",
             })
           }
@@ -64,10 +66,7 @@ const BarChartDisplay = ({ year }: { year: number }) => {
           width={60}
           domain={[0, "auto"]}
           tickFormatter={(value) =>
-            `$${Number(value).toLocaleString("en-US", {
-              notation: "compact",
-              maximumFractionDigits: 1,
-            })}`
+            formatCompactCurrency(Number(value))
           }
         />
 
@@ -77,7 +76,7 @@ const BarChartDisplay = ({ year }: { year: number }) => {
             <ChartTooltipContent
               indicator="dashed"
               labelFormatter={(value) =>
-                new Date(`${value}T00:00:00`).toLocaleDateString("en-US", {
+                new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
                   month: "long",
                   year: "numeric",
                 })
@@ -87,11 +86,7 @@ const BarChartDisplay = ({ year }: { year: number }) => {
                   <span className="capitalize">{name}</span>
 
                   <span className="font-mono font-medium">
-                    $
-                    {Number(value).toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(Number(value))}
                   </span>
                 </div>
               )}

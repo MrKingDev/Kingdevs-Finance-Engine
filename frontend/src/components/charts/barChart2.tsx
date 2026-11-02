@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -39,6 +40,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 const BarChart2 = ({ category, month, year }: BarChart2Props) => {
+  const { currencyFormatter } = useRegionalFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -148,11 +150,7 @@ const BarChart2 = ({ category, month, year }: BarChart2Props) => {
           tickLine={false}
           axisLine={false}
           tickFormatter={(value) =>
-            new Intl.NumberFormat("en-US", {
-              style: "currency",
-              currency: "USD",
-              maximumFractionDigits: 0,
-            }).format(value)
+            currencyFormatter.format(value)
           }
         />
 
@@ -161,10 +159,7 @@ const BarChart2 = ({ category, month, year }: BarChart2Props) => {
           content={
             <ChartTooltipContent
               formatter={(value) =>
-                new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                }).format(Number(value))
+                currencyFormatter.format(Number(value))
               }
             />
           }

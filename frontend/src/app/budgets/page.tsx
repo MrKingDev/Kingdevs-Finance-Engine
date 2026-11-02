@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import { Plus } from "lucide-react";
 import * as React from "react";
@@ -76,13 +77,17 @@ const monthOptions = [
 ];
 
 const Budgets = () => {
+  const { currencySymbol, today } = useRegionalFormat();
+  const [currentYear, currentMonth] = today().split("-").map(Number);
   const {
     data: budgets,
     loading: isLoading,
     error,
   } = useFinanceList<Budget>("/budgets");
-  const [filterMonth, setFilterMonth] = React.useState("all");
-  const [filterYear, setFilterYear] = React.useState("all");
+  const [chosenFilterMonth, setFilterMonth] = React.useState<string | null>(null);
+  const [chosenFilterYear, setFilterYear] = React.useState<string | null>(null);
+  const filterMonth = chosenFilterMonth ?? String(currentMonth);
+  const filterYear = chosenFilterYear ?? String(currentYear);
   const budgetYears = [
     ...new Set([
       ...budgets.map((budget) => budget.year),
@@ -104,9 +109,11 @@ const Budgets = () => {
   // Create budget dialog
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const [month, setMonth] = React.useState(new Date().getMonth() + 1);
+  const [draftMonth, setMonth] = React.useState<number | null>(null);
+  const month = draftMonth ?? currentMonth;
 
-  const [year, setYear] = React.useState(new Date().getFullYear());
+  const [draftYear, setYear] = React.useState<number | null>(null);
+  const year = draftYear ?? currentYear;
 
   const [amount, setAmount] = React.useState("");
 
@@ -159,9 +166,10 @@ const Budgets = () => {
 
       setAmount("");
 
-      setMonth(new Date().getMonth() + 1);
-
-      setYear(new Date().getFullYear());
+      setFilterMonth(String(month));
+      setFilterYear(String(year));
+      setMonth(null);
+      setYear(null);
 
       setIsDialogOpen(false);
     } catch (error) {
@@ -319,7 +327,7 @@ const Budgets = () => {
 
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                        $
+                        {currencySymbol}
                       </span>
 
                       <Input

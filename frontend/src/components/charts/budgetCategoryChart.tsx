@@ -1,14 +1,12 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import { AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useFinanceList } from "@/lib/use-finance-list";
 import type { Budget } from "@/types/api";
 
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
+
 
 export default function BudgetCategoryChart({
   month,
@@ -17,6 +15,7 @@ export default function BudgetCategoryChart({
   month: number;
   year: number;
 }) {
+  const { currencyFormatter: currency } = useRegionalFormat();
   const {
     data: budgets,
     loading,

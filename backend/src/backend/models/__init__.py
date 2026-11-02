@@ -6,5 +6,6 @@ from backend.models.subscription import Subscription, SubscriptionPayment
 from backend.models.goal import Goal, GoalEntry
 
 from backend.models.bank import BankStyle
+from backend.models.preferences import Preferences
 
-__all__ = ["Budget", "Category", "Transaction", "TransactionRule", "Subscription", "SubscriptionPayment", "Goal", "GoalEntry", "BankStyle"]
+__all__ = ["Budget", "Category", "Transaction", "TransactionRule", "Subscription", "SubscriptionPayment", "Goal", "GoalEntry", "BankStyle", "Preferences"]

@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -21,6 +22,7 @@ type MonthlyTotal = {
 };
 
 const MonthlyHistory = () => {
+  const { currencyFormatter, locale } = useRegionalFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -106,7 +108,7 @@ const MonthlyHistory = () => {
           month.year,
           month.month - 1,
           1,
-        ).toLocaleDateString("en-US", {
+        ).toLocaleDateString(locale, {
           month: "short",
           year: "numeric",
         });
@@ -117,10 +119,7 @@ const MonthlyHistory = () => {
               <p className="font-semibold">{label}</p>
 
               <p className="shrink-0 font-semibold">
-                {new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                }).format(month.total)}
+                {currencyFormatter.format(month.total)}
               </p>
             </div>
 

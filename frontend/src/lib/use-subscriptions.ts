@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { API_URL, apiError } from "@/lib/finance-api";
 import type { SubscriptionOverview } from "@/types/api";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 export function useSubscriptions(includeArchived: boolean) {
+  const { today } = useRegionalFormat();
   const [data, setData] = useState<SubscriptionOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -14,9 +16,9 @@ export function useSubscriptions(includeArchived: boolean) {
   useEffect(() => {
     window.addEventListener("finance-data-changed", refresh);
     window.addEventListener("focus", refresh);
-    let day = new Date().toISOString().slice(0, 10);
+    let day = today();
     const timer = window.setInterval(() => {
-      const nextDay = new Date().toISOString().slice(0, 10);
+      const nextDay = today();
       if (nextDay !== day) { day = nextDay; refresh(); }
     }, 60_000);
     return () => {
@@ -24,7 +26,7 @@ export function useSubscriptions(includeArchived: boolean) {
       window.removeEventListener("focus", refresh);
       window.clearInterval(timer);
     };
-  }, [refresh]);
+  }, [refresh, today]);
 
   useEffect(() => {
     void revision;

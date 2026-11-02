@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import * as React from "react";
 
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 export default function BillSplitter() {
+  const { formatCurrency, currencySymbol } = useRegionalFormat();
   const [billAmount, setBillAmount] = React.useState("");
   const [tipPercentage, setTipPercentage] = React.useState(15);
   const [taxPercentage, setTaxPercentage] = React.useState(0);
@@ -35,12 +37,7 @@ export default function BillSplitter() {
 
   const billPerPerson = people > 0 ? bill / people : 0;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+
 
   return (
     <Card className="w-full">
@@ -59,7 +56,7 @@ export default function BillSplitter() {
 
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              $
+              {currencySymbol}
             </span>
 
             <Input

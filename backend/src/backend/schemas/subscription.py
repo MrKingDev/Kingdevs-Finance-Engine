@@ -65,7 +65,7 @@ class SubscriptionResponse(SubscriptionCreate):
     model_config = ConfigDict(from_attributes=True)
     id: int
     is_active: bool
-    currency: Literal["USD"] = "USD"
+    currency: str = "USD"
     created_at: datetime
     updated_at: datetime
     next_bill_status: Literal["overdue", "due_today", "upcoming", "archived"]
@@ -76,7 +76,7 @@ class SubscriptionResponse(SubscriptionCreate):
 
 
 class SubscriptionSummary(BaseModel):
-    currency: Literal["USD"] = "USD"
+    currency: str = "USD"
     as_of_date: date
     active_count: int
     overdue_count: int

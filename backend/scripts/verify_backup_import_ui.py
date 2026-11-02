@@ -140,7 +140,7 @@ try:
         click("Import & Save Backup")
         until("document.querySelector('output')?.textContent.includes('Saved 9 records')")
         after = saved_data()
-        assert all(len(after[table]) == len(before[table]) + 1 for table in before)
+        assert all(len(after[table]) == len(before[table]) + len(backup["data"].get(table, [])) for table in before)
         assert evaluate("localStorage.getItem('what-to-buy-budget')") == "77.77"
         assert len(json.loads(evaluate("localStorage.getItem('what-to-buy-items')"))) == 1
         upload(payload)

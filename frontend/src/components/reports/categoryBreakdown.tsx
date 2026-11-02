@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -15,6 +16,7 @@ type Transaction = {
 };
 
 const CategoryBreakdown = () => {
+  const { currencyFormatter } = useRegionalFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -86,10 +88,7 @@ const CategoryBreakdown = () => {
             <p className="font-semibold">{category}</p>
 
             <p className="shrink-0 font-semibold">
-              {new Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: "USD",
-              }).format(total)}
+              {currencyFormatter.format(total)}
             </p>
           </div>
 

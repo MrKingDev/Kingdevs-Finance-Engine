@@ -182,7 +182,7 @@ try:
         call("Emulation.setDeviceMetricsOverride", {"width": 1440, "height": 1000, "deviceScaleFactor": 1, "mobile": False})
 
         call("Page.navigate", {"url": BASE + "/budgets"})
-        until("document.body.innerText.includes(" + json.dumps(name) + ")")
+        until("!!document.getElementById('budget-filter-month-label') && !document.body.innerText.includes('Loading budgets')")
         month_trigger = "document.getElementById('budget-filter-month-label').parentElement.querySelector('button')"
         year_trigger = "document.getElementById('budget-filter-year-label').parentElement.querySelector('button')"
         select(month_trigger, "January")

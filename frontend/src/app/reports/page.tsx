@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -48,14 +49,15 @@ type Transaction = {
 };
 
 const Reports = () => {
+  const { formatCurrency, locale, today } = useRegionalFormat();
   const [chartType, setChartType] = React.useState<"area" | "bar">("area");
   const [category, setCategory] = useState<string | null>(null);
 
-  const now = new Date();
-
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
-
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [currentYear, currentMonth] = today().split("-").map(Number);
+  const [chosenMonth, setSelectedMonth] = useState<number | null>(null);
+  const [chosenYear, setSelectedYear] = useState<number | null>(null);
+  const selectedMonth = chosenMonth ?? currentMonth;
+  const selectedYear = chosenYear ?? currentYear;
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,14 +117,9 @@ const Reports = () => {
     };
   }, [transactions, selectedMonth, selectedYear]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(value);
-  };
 
-  const selectedMonthName = new Intl.DateTimeFormat("en-US", {
+
+  const selectedMonthName = new Intl.DateTimeFormat(locale, {
     month: "long",
   }).format(new Date(selectedYear, selectedMonth - 1));
 
@@ -161,7 +158,7 @@ const Reports = () => {
                   {Array.from({ length: 12 }, (_, index) => index + 1).map(
                     (month) => (
                       <SelectItem key={month} id={String(month)}>
-                        {new Intl.DateTimeFormat("en-US", {
+                        {new Intl.DateTimeFormat(locale, {
                           month: "long",
                         }).format(new Date(2000, month - 1))}
                       </SelectItem>
@@ -190,7 +187,7 @@ const Reports = () => {
               <SelectContent>
                 <SelectGroup>
                   {[...new Set([
-                    ...Array.from({ length: Math.max(now.getFullYear() - 1999, 1) }, (_, index) => 2000 + index),
+                    ...Array.from({ length: Math.max(currentYear - 1999, 1) }, (_, index) => 2000 + index),
                     ...transactions.map((transaction) => Number(transaction.date.slice(0, 4))),
                   ])].sort((a, b) => b - a)
                     .map((year) => (

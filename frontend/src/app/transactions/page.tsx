@@ -36,11 +36,11 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
 import { useFinanceList } from "@/lib/use-finance-list";
 import type { Transaction } from "@/types/api";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
-const emptyTransaction = () => {
-  const today = new Date();
+const emptyTransaction = (today: string) => {
   return {
-    date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`,
+    date: today,
     merchant: "",
     category: "",
     bank: "",
@@ -50,6 +50,7 @@ const emptyTransaction = () => {
 };
 
 const Transactions = () => {
+  const { today } = useRegionalFormat();
   const banks = useFinanceList<string>("/transactions/banks");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -80,7 +81,7 @@ const Transactions = () => {
 
   const [addingTransaction, setAddingTransaction] = useState(false);
 
-  const [formData, setFormData] = useState(emptyTransaction);
+  const [formData, setFormData] = useState(() => emptyTransaction(today()));
 
   const handleEditTransaction = (transaction: Transaction) => {
     setEditingId(transaction.id);
@@ -147,7 +148,7 @@ const Transactions = () => {
       setIsDialogOpen(false);
       notifyFinanceChanged();
 
-      setFormData(emptyTransaction());
+      setFormData(emptyTransaction(today()));
       setEditingId(null);
       setIsDuplicate(false);
     } catch (error) {
@@ -186,7 +187,7 @@ const Transactions = () => {
                 setEditingId(null);
                 setIsDuplicate(false);
                 setCreateError(null);
-                setFormData(emptyTransaction());
+                setFormData(emptyTransaction(today()));
               }}
             >
               <Plus className="size-4" />

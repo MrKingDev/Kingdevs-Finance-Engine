@@ -9,13 +9,13 @@ from sqlalchemy.orm import Session
 
 from backend.models import (
     BankStyle, Budget, Category, Goal, GoalEntry, Subscription,
-    SubscriptionPayment, Transaction, TransactionRule,
+    SubscriptionPayment, Transaction, TransactionRule, Preferences,
 )
 
 
 BACKUP_MODELS = (
     Category, BankStyle, Transaction, Budget, TransactionRule,
-    Goal, GoalEntry, Subscription, SubscriptionPayment,
+    Goal, GoalEntry, Subscription, SubscriptionPayment, Preferences,
 )
 
 

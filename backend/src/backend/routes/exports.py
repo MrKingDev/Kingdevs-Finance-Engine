@@ -1,6 +1,7 @@
 """Monthly reports and complete data backups. Exports never write saved data."""
 
 from datetime import datetime, timezone
+from dataclasses import replace
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Response
@@ -11,6 +12,7 @@ from backend.database import get_db
 from backend.services.exports import export_years, monthly_report, transaction_csv
 from backend.services.report_pdf import pdf_report
 from backend.services.backup import full_backup
+from backend.services.preferences import get_preferences
 
 router = APIRouter(prefix="/exports", tags=["Exports"])
 Month = Annotated[int, Query(ge=1, le=12)]
@@ -55,7 +57,9 @@ def csv_download(month: Month, year: Year, db: Session = Depends(get_db)):
                        413: {"description": "Month exceeds 10,000 transactions"}})
 def pdf_download(month: Month, year: Year, style: Literal["styled", "basic"] = "styled",
                  db: Session = Depends(get_db)):
-    """USD totals, expense categories, and all monthly transactions. Styled adds the designed overview cover."""
+    """Totals in the saved currency, expense categories, and all monthly transactions."""
     report = monthly_report(db, year, month)
+    preferences = get_preferences(db)
+    report = replace(report, currency=preferences.currency, locale=preferences.locale)
     return download(pdf_report(report, styled=style == "styled"), "application/pdf",
                     f"finance-report-{year:04}-{month:02}-{style}.pdf")

@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
+import { parseRegionalDate } from "@/lib/regional-format";
 
 import {
   fromDate,
-  getLocalTimeZone,
   parseDate,
   toCalendarDate,
   type CalendarDate,
@@ -41,18 +42,6 @@ interface DatePickerInputProps {
   maxValue?: string;
 }
 
-function formatDate(date: Date | undefined, monthOnly = false) {
-  if (!date) {
-    return "";
-  }
-
-  return date.toLocaleDateString("en-US", {
-    ...(monthOnly ? {} : { day: "2-digit" as const }),
-    month: "long",
-    year: "numeric",
-  });
-}
-
 function isValidDate(date: Date | undefined) {
   if (!date) {
     return false;
@@ -84,6 +73,10 @@ export function DatePickerInput({
   minValue,
   maxValue,
 }: DatePickerInputProps) {
+  const { formatDate: displayDate, locale, today } = useRegionalFormat();
+  const formatDate = React.useCallback((date: CalendarDate, onlyMonth: boolean) => displayDate(date.toString(), {
+    ...(onlyMonth ? {} : { day: "2-digit" }), month: "2-digit", year: "numeric",
+  }), [displayDate]);
   const [open, setOpen] = React.useState(false);
 
   const initialDate = getCalendarDate(value);
@@ -99,7 +92,7 @@ export function DatePickerInput({
       return "";
     }
 
-    return formatDate(initialDate.toDate(getLocalTimeZone()), monthOnly);
+    return formatDate(initialDate, monthOnly);
   });
 
   // Keep picker synced with parent form value
@@ -111,29 +104,27 @@ export function DatePickerInput({
     if (newDate) {
       setMonth(newDate);
 
-      setInputValue(formatDate(newDate.toDate(getLocalTimeZone()), monthOnly));
+      setInputValue(formatDate(newDate, monthOnly));
     } else {
       setInputValue("");
     }
-  }, [value, monthOnly]);
+  }, [value, monthOnly, formatDate]);
 
   const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
 
     setInputValue(newValue);
 
-    const parsedDate = new Date(newValue);
-
     if (!newValue.trim()) {
       setDate(undefined); onChange?.(""); return;
     }
-    if (!isValidDate(parsedDate)) {
-      return;
+    let calendarDate = getCalendarDate(parseRegionalDate(newValue, locale, monthOnly));
+    // Keep accepting the previously supported English month names.
+    if (!calendarDate && /[a-z]/i.test(newValue)) {
+      const parsedDate = new Date(`${newValue} UTC`);
+      if (isValidDate(parsedDate)) calendarDate = toCalendarDate(fromDate(parsedDate, "UTC"));
     }
-
-    const calendarDate = toCalendarDate(
-      fromDate(parsedDate, getLocalTimeZone()),
-    );
+    if (!calendarDate) return;
 
     if ((minValue && calendarDate.toString() < minValue) || (maxValue && calendarDate.toString() > maxValue)) return;
     setDate(calendarDate);
@@ -180,6 +171,7 @@ export function DatePickerInput({
               offset={10}
             >
               <Calendar
+                defaultFocusedValue={getCalendarDate(today())}
                 isDisabled={disabled}
                 minValue={getCalendarDate(minValue)}
                 maxValue={getCalendarDate(maxValue)}
@@ -202,7 +194,7 @@ export function DatePickerInput({
                   setMonth(selectedDate);
 
                   setInputValue(
-                    formatDate(selectedDate.toDate(getLocalTimeZone()), monthOnly),
+                    formatDate(selectedDate, monthOnly),
                   );
 
                   // Gives parent YYYY-MM-DD

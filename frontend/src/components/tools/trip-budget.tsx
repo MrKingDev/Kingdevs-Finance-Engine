@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import * as React from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -488,6 +489,7 @@ const checklistItems = [
 ];
 
 export default function TripBudget() {
+  const { formatCurrency, currencySymbol } = useRegionalFormat();
   const [tripDays, setTripDays] = React.useState(4);
   const [hotelNights, setHotelNights] = React.useState(4);
 
@@ -529,11 +531,7 @@ export default function TripBudget() {
   // HELPERS
   // ========================================
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
+
 
   const calculateBudget = (item: ExpenseItem) => {
     if (!item.enabled) return 0;
@@ -862,7 +860,7 @@ export default function TripBudget() {
 
                 <div className="relative max-w-sm">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
+                    {currencySymbol}
                   </span>
 
                   <Input
@@ -985,7 +983,7 @@ export default function TripBudget() {
 
                                 <div className="relative">
                                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                    $
+                                    {currencySymbol}
                                   </span>
 
                                   <Input
@@ -1049,7 +1047,7 @@ export default function TripBudget() {
 
                                   <div className="relative">
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                      $
+                                      {currencySymbol}
                                     </span>
 
                                     <Input
@@ -1152,7 +1150,7 @@ export default function TripBudget() {
 
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        $
+                        {currencySymbol}
                       </span>
 
                       <Input
@@ -1180,7 +1178,7 @@ export default function TripBudget() {
 
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        $
+                        {currencySymbol}
                       </span>
 
                       <Input

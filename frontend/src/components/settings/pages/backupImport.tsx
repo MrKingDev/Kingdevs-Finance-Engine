@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import { FileJson, LoaderCircle } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -18,6 +19,7 @@ type BackupPreview = {
 const labels: Record<string, string> = {
   categories: "Categories",
   bank_styles: "Bank preferences",
+  preferences: "Region, currency & time zone",
   transactions: "Transactions",
   budgets: "Budgets",
   transaction_rules: "Import rules",
@@ -59,6 +61,7 @@ function browserChanges(data: BrowserData) {
 }
 
 export default function BackupImport() {
+  const { formatDateTime } = useRegionalFormat();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<BackupPreview | null>(null);
   const [busy, setBusy] = useState<"preview" | "import" | null>(null);
@@ -179,7 +182,7 @@ export default function BackupImport() {
         <div className="space-y-4">
           {preview.exported_at && (
             <p className="text-sm text-muted-foreground">
-              Backup created {new Date(preview.exported_at).toLocaleString()}.
+              Backup created {formatDateTime(preview.exported_at)}.
             </p>
           )}
           <div className="max-w-2xl overflow-x-auto rounded-lg border">

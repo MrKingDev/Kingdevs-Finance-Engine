@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import * as React from "react";
 
@@ -29,6 +30,7 @@ type PayPeriod =
   | "yearly";
 
 export default function SalaryConverter() {
+  const { formatCurrency, currencySymbol } = useRegionalFormat();
   const [salary, setSalary] = React.useState("");
   const [payPeriod, setPayPeriod] = React.useState<PayPeriod>("yearly");
 
@@ -87,13 +89,7 @@ export default function SalaryConverter() {
 
   const yearly = yearlySalary;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
+
 
   const conversions = [
     {
@@ -146,7 +142,7 @@ export default function SalaryConverter() {
 
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                $
+                {currencySymbol}
               </span>
 
               <Input

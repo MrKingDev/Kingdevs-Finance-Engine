@@ -1,7 +1,15 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import { AlertDialog, AlertDialogTrigger, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -75,7 +83,12 @@ export default function CategoriesSettings() {
           headers: { "Content-Type": "application/json" },
           ...(remove
             ? {}
-            : { body: JSON.stringify({ name: editName.trim(), color: editColor }) }),
+            : {
+                body: JSON.stringify({
+                  name: editName.trim(),
+                  color: editColor,
+                }),
+              }),
         },
       );
       if (!response.ok)
@@ -214,41 +227,119 @@ export default function CategoriesSettings() {
               />
               <span className="break-all">{category.name}</span>
             </span>
-            <AlertDialogTrigger isOpen={editing === category.name} onOpenChange={(open) => {
-              if (updating !== null) return;
-              setEditing(open ? category.name : null);
-              setEditName(category.name); setEditColor(category.color); setError(null);
-            }}>
-              <Button variant="outline" isDisabled={updating !== null}>Edit category</Button>
+            <AlertDialogTrigger
+              isOpen={editing === category.name}
+              onOpenChange={(open) => {
+                if (updating !== null) return;
+                setEditing(open ? category.name : null);
+                setEditName(category.name);
+                setEditColor(category.color);
+                setError(null);
+              }}
+            >
+              <Button variant="outline" isDisabled={updating !== null}>
+                Edit Category
+              </Button>
               <AlertDialog isKeyboardDismissDisabled={updating !== null}>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Edit {category.name}</AlertDialogTitle>
-                  <AlertDialogDescription>Update the name and color across all linked records.</AlertDialogDescription>
+                  <AlertDialogDescription>
+                    Update the name and color across all linked records.
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
-                <label htmlFor="edit-category-name" className="text-sm font-medium">Category name</label>
-                <Input id="edit-category-name" value={editName} onChange={(event) => setEditName(event.target.value)} maxLength={100} disabled={updating !== null} />
-                <Select aria-label="Category color" selectedKey={editColor} isDisabled={updating !== null || palette.loading || !!palette.error} onSelectionChange={(key) => { if (key !== null) setEditColor(String(key)); }}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{palette.data.map((option) => <SelectItem key={option.value} id={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                <label
+                  htmlFor="edit-category-name"
+                  className="text-sm font-medium"
+                >
+                  Category name
+                </label>
+                <Input
+                  id="edit-category-name"
+                  value={editName}
+                  onChange={(event) => setEditName(event.target.value)}
+                  maxLength={100}
+                  disabled={updating !== null}
+                />
+                <Select
+                  aria-label="Category color"
+                  selectedKey={editColor}
+                  isDisabled={
+                    updating !== null || palette.loading || !!palette.error
+                  }
+                  onSelectionChange={(key) => {
+                    if (key !== null) setEditColor(String(key));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {palette.data.map((option) => (
+                      <SelectItem key={option.value} id={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
-                {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+                {error && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
                 <AlertDialogFooter>
-                  <AlertDialogCancel isDisabled={updating !== null}>Cancel</AlertDialogCancel>
-                  <Button isDisabled={updating !== null || !editName.trim() || palette.loading || !!palette.error} onPress={() => void mutateCategory(category)}>{updating ? "Saving..." : "Save changes"}</Button>
+                  <AlertDialogCancel isDisabled={updating !== null}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <Button
+                    isDisabled={
+                      updating !== null ||
+                      !editName.trim() ||
+                      palette.loading ||
+                      !!palette.error
+                    }
+                    onPress={() => void mutateCategory(category)}
+                  >
+                    {updating ? "Saving..." : "Save changes"}
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialog>
             </AlertDialogTrigger>
-            <AlertDialogTrigger isOpen={deleting === category.name} onOpenChange={(open) => { if (updating === null) { setDeleting(open ? category.name : null); setError(null); } }}>
-              <Button variant="outline" isDisabled={updating !== null}>Delete</Button>
+            <AlertDialogTrigger
+              isOpen={deleting === category.name}
+              onOpenChange={(open) => {
+                if (updating === null) {
+                  setDeleting(open ? category.name : null);
+                  setError(null);
+                }
+              }}
+            >
+              <Button variant="destructive" isDisabled={updating !== null}>
+                Delete
+              </Button>
               <AlertDialog isKeyboardDismissDisabled={updating !== null}>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete {category.name}?</AlertDialogTitle>
-                  <AlertDialogDescription>Only unused categories can be deleted. Reassign linked transactions, budgets, rules and subscriptions first.</AlertDialogDescription>
+                  <AlertDialogDescription>
+                    Only unused categories can be deleted. Reassign linked
+                    transactions, budgets, rules and subscriptions first.
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
-                {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+                {error && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
                 <AlertDialogFooter>
-                  <AlertDialogCancel isDisabled={updating !== null}>Cancel</AlertDialogCancel>
-                  <Button variant="destructive" isDisabled={updating !== null} onPress={() => void mutateCategory(category, true)}>{updating ? "Deleting..." : "Delete category"}</Button>
+                  <AlertDialogCancel isDisabled={updating !== null}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <Button
+                    variant="destructive"
+                    isDisabled={updating !== null}
+                    onPress={() => void mutateCategory(category, true)}
+                  >
+                    {updating ? "Deleting..." : "Delete category"}
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialog>
             </AlertDialogTrigger>

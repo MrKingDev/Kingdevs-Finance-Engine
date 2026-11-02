@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import * as React from "react";
 import Link from "next/link";
@@ -58,13 +59,13 @@ type Transaction = {
 };
 
 const Dashboard = () => {
-  const today = new Date();
+  const { formatCurrency, locale, today } = useRegionalFormat();
+  const [currentYear, currentMonth] = today().split("-").map(Number);
 
-  const [selectedMonth, setSelectedMonth] = React.useState(
-    today.getMonth() + 1,
-  );
-
-  const [selectedYear, setSelectedYear] = React.useState(today.getFullYear());
+  const [chosenMonth, setSelectedMonth] = React.useState<number | null>(null);
+  const [chosenYear, setSelectedYear] = React.useState<number | null>(null);
+  const selectedMonth = chosenMonth ?? currentMonth;
+  const selectedYear = chosenYear ?? currentYear;
 
   const [chartType, setChartType] = React.useState<"area" | "bar">("area");
 
@@ -154,14 +155,9 @@ const Dashboard = () => {
     };
   }, [transactions, selectedMonth, selectedYear]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(value);
-  };
 
-  const selectedMonthName = new Intl.DateTimeFormat("en-US", {
+
+  const selectedMonthName = new Intl.DateTimeFormat(locale, {
     month: "long",
   }).format(new Date(selectedYear, selectedMonth - 1));
 
@@ -201,7 +197,7 @@ const Dashboard = () => {
                   {Array.from({ length: 12 }, (_, index) => index + 1).map(
                     (month) => (
                       <SelectItem key={month} id={String(month)}>
-                        {new Intl.DateTimeFormat("en-US", {
+                        {new Intl.DateTimeFormat(locale, {
                           month: "long",
                         }).format(new Date(2000, month - 1))}
                       </SelectItem>

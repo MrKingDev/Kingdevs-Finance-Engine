@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import * as React from "react";
 
@@ -23,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 type CompoundFrequency = "1" | "4" | "12" | "365";
 
 export default function CompoundInterest() {
+  const { formatCurrency, currencySymbol } = useRegionalFormat();
   const [principal, setPrincipal] = React.useState("");
   const [interestRate, setInterestRate] = React.useState("");
   const [years, setYears] = React.useState("");
@@ -87,13 +89,7 @@ export default function CompoundInterest() {
 
   const interestEarned = Math.max(finalBalance - totalContributions, 0);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
+
 
   return (
     <Card className="w-full">
@@ -113,7 +109,7 @@ export default function CompoundInterest() {
 
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              $
+              {currencySymbol}
             </span>
 
             <Input
@@ -173,7 +169,7 @@ export default function CompoundInterest() {
 
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              $
+              {currencySymbol}
             </span>
 
             <Input

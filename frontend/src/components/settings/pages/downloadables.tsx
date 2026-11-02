@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import {
   DatabaseBackupIcon,
@@ -36,6 +37,7 @@ const MONTHS = [
 type ExportKind = "csv" | "styled" | "basic" | "backup";
 
 export default function Downloadables() {
+  const { currencyCode, today } = useRegionalFormat();
   const [period, setPeriod] = useState<{ month: number; year: number } | null>(
     null,
   );
@@ -46,8 +48,8 @@ export default function Downloadables() {
   const activeDownload = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    // A client-local date after mount keeps the server and first client render identical.
-    const now = new Date();
+    // Use the saved time zone's calendar day after mount.
+    const now = new Date(`${today()}T00:00:00`);
     setPeriod({ month: now.getMonth() + 1, year: now.getFullYear() });
     const defaultYears = Array.from(
       { length: Math.max(now.getFullYear() - 2000 + 2, 1) },
@@ -87,7 +89,7 @@ export default function Downloadables() {
       activeDownload.current?.abort();
       activeDownload.current = null;
     };
-  }, []);
+  }, [today]);
 
   async function download(kind: ExportKind) {
     if ((kind !== "backup" && !period) || activeDownload.current) return;
@@ -101,7 +103,7 @@ export default function Downloadables() {
       : "";
     const filename =
       kind === "backup"
-        ? `finance-backup-${new Date().toISOString().slice(0, 10)}.json`
+        ? `finance-backup-${today()}.json`
         : kind === "csv"
           ? `finance-transactions-${suffix}.csv`
           : `finance-report-${suffix}-${kind}.pdf`;
@@ -245,7 +247,7 @@ export default function Downloadables() {
         {period
           ? `${MONTHS[period.month - 1]} ${period.year}`
           : "your selected month"}
-        . PDF totals are in USD.
+        . PDF totals are in {currencyCode}.
       </p>
       <div className="flex flex-wrap gap-3" aria-busy={downloading !== null}>
         <Button

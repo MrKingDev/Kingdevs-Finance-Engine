@@ -184,7 +184,7 @@ class ExportTests(unittest.TestCase):
             self.client.get("/exports/transactions.csv?month=10&year=2026")
         finally:
             event.remove(self.engine, "before_cursor_execute", record)
-        self.assertEqual(len(statements), 2)
+        self.assertEqual(len(statements), 3)  # Two report snapshots and saved PDF preferences.
         self.assertTrue(all(s.lstrip().startswith("SELECT") for s in statements))
 
     def test_large_amounts_and_unicode_text_render(self):

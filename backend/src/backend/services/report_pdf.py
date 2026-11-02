@@ -4,6 +4,7 @@ from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 from xml.sax.saxutils import escape
+from babel.numbers import format_currency
 
 from reportlab.lib.colors import HexColor, black, white
 from reportlab.lib.pagesizes import letter
@@ -36,8 +37,8 @@ CHART_COLORS = {
 }
 
 
-def money(value: Decimal) -> str:
-    return f"-${abs(value):,.2f}" if value < 0 else f"${value:,.2f}"
+def money(value: Decimal, report: MonthlyReport) -> str:
+    return format_currency(value, report.currency, locale=report.locale.replace("-", "_"), currency_digits=False)
 
 
 def clean_text(value: str) -> str:
@@ -96,7 +97,7 @@ def cover(canvas, report: MonthlyReport):
         rectangle(canvas, x, 511, 170, 122, white, 12)
         rectangle(canvas, x + 14, 601, 25, 4, color, 2)
         label(canvas, title, x + 16, 578, 10, MUTED)
-        label(canvas, money(amount), x + 16, 542, 25, color, True, 138)
+        label(canvas, money(amount, report), x + 16, 542, 25, color, True, 138)
 
     label(canvas, "Spending by category", 40, 476, 16, NAVY, True)
     rectangle(canvas, 40, 233, 532, 220, white, 12)
@@ -115,7 +116,7 @@ def cover(canvas, report: MonthlyReport):
         angle -= extent
     canvas.setFillColor(white)
     canvas.circle(cx, cy, 51, stroke=0, fill=1)
-    label(canvas, money(report.expenses), cx, 345, 21, NAVY, True, 94, "center")
+    label(canvas, money(report.expenses, report), cx, 345, 21, NAVY, True, 94, "center")
     label(canvas, "Total spending", cx, 326, 9, MUTED, align="center")
     if not visible:
         rectangle(canvas, 242, 389, 28, 4, TEAL, 2)
@@ -128,7 +129,7 @@ def cover(canvas, report: MonthlyReport):
             color = CHART_COLORS.get(category.color.removeprefix("chart-").removesuffix("-2"), "#94a3b8")
             rectangle(canvas, 242, y-1, 7, 7, HexColor(color), 2)
             label(canvas, short_label(category.name, 145), 257, y, 9)
-            label(canvas, money(category.amount), 552, y, 10, NAVY, True, 138, "right")
+            label(canvas, money(category.amount, report), 552, y, 10, NAVY, True, 138, "right")
             share = category.amount / report.expenses * 100
             label(canvas, f"{share:.1f}% of spending", 257, y-11, 7, MUTED)
 
@@ -197,22 +198,22 @@ def pdf_report(report: MonthlyReport, styled: bool = True) -> bytes:
     else:
         story += [paragraph("Finance report", heading), paragraph(report.period), Spacer(1, 12)]
         story.append(table(["Income", "Expenses", "Net cash flow"],
-                           [[money(report.income), money(report.expenses), money(report.net)]], [177, 177, 178]))
+                           [[money(report.income, report), money(report.expenses, report), money(report.net, report)]], [177, 177, 178]))
 
     if report.categories:
         story.append(paragraph("Spending by category", heading))
         story.append(table(["Category", "Share", "Amount"], [
-            [c.name, f"{c.amount / report.expenses * 100:.1f}%", money(c.amount)] for c in report.categories
+            [c.name, f"{c.amount / report.expenses * 100:.1f}%", money(c.amount, report)] for c in report.categories
         ], [322, 70, 140], last_right=True))
     elif not styled:
         story.append(paragraph("No spending recorded", heading))
 
     if report.transactions:
         story.append(paragraph(f"Transactions ({len(report.transactions)})", heading))
-        story.append(paragraph("Amounts are positive; the Type column identifies income and expenses. Currency: USD."))
+        story.append(paragraph(f"Amounts are positive; the Type column identifies income and expenses. Currency: {report.currency}."))
         story.append(Spacer(1, 8))
         story.append(table(["Date", "Merchant", "Category", "Bank", "Type", "Amount"], [
-            [r.date.isoformat(), r.merchant, r.category, r.bank, r.type, money(r.amount)]
+            [r.date.isoformat(), r.merchant, r.category, r.bank, r.type, money(r.amount, report)]
             for r in report.transactions
         ], [64, 144, 92, 80, 52, 100], last_right=True))
     elif not styled:

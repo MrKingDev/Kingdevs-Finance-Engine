@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import * as React from "react";
 import {
@@ -329,12 +330,7 @@ const createDefaultForm = (): ItemForm => ({
    MONEY
 ========================================================= */
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-};
+
 
 /* =========================================================
    DEADLINES
@@ -628,6 +624,7 @@ function RatingField({ ratingKey, value, onChange }: RatingFieldProps) {
 ========================================================= */
 
 export default function WishList() {
+  const { formatCurrency, currencySymbol } = useRegionalFormat();
   const [items, setItems] = React.useState<WishlistItem[]>([]);
   const [budget, setBudget] = React.useState(0);
 
@@ -952,7 +949,7 @@ export default function WishList() {
 
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
+                    {currencySymbol}
                   </span>
 
                   <Input
@@ -1129,7 +1126,7 @@ export default function WishList() {
 
             <div className="relative mt-2">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                $
+                {currencySymbol}
               </span>
 
               <Input

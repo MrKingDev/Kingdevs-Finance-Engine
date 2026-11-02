@@ -1,4 +1,5 @@
 "use client";
+import { useRegionalFormat } from "@/components/preferences/preferencesProvider";
 
 import { Trash } from "lucide-react";
 
@@ -31,32 +32,13 @@ type BudgetCardProps = {
   isDeleting?: boolean;
 };
 
-const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
 const BudgetCard = ({
   budget,
   onDelete,
   isDeleting = false,
 }: BudgetCardProps) => {
-  const monthName = monthNames[budget.month - 1] ?? "Unknown";
+  const { currencyFormatter, formatDate } = useRegionalFormat();
+  const monthName = formatDate(`${budget.year}-${String(budget.month).padStart(2, "0")}-01`, { month: "long" });
 
   const spent = Number(budget.spent);
   const remaining = Number(budget.remaining);

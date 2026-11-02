@@ -43,6 +43,8 @@ class MonthlyReport:
     categories: list[CategorySpending]
     income: Decimal
     expenses: Decimal
+    currency: str = "USD"
+    locale: str = "en-US"
 
     @property
     def period(self) -> str:

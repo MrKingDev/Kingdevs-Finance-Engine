@@ -12,6 +12,7 @@ from backend.schemas.goal import GoalCreate, GoalEntryCreate
 from backend.schemas.subscription import PaymentCreate, SubscriptionCreate
 from backend.schemas.transaction import TransactionCreate
 from backend.schemas.transaction_rule import RuleWrite
+from backend.schemas.preferences import PreferencesWrite
 
 RecordID = Annotated[int, Field(strict=True, gt=0, le=2_147_483_647)]
 MAX_BACKUP_BYTES = 50_000_000
@@ -80,6 +81,10 @@ class BackupPayment(PaymentCreate):
     created_at: datetime
 
 
+class BackupPreferences(PreferencesWrite):
+    id: Annotated[int, Field(strict=True, ge=1, le=1)]
+
+
 class BackupData(BaseModel):
     model_config = ConfigDict(extra="forbid")
     categories: list[BackupCategory]
@@ -91,6 +96,8 @@ class BackupData(BaseModel):
     goal_entries: list[BackupEntry]
     subscriptions: list[BackupSubscription]
     subscription_payments: list[BackupPayment]
+    # Optional for compatibility with backups created before preferences existed.
+    preferences: list[BackupPreferences] = Field(default_factory=list, max_length=1)
 
     @model_validator(mode="after")
     def validate_links_and_keys(self):

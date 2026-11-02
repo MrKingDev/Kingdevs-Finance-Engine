@@ -192,3 +192,5 @@ No users/accounts, JWT/OAuth, bank sync, durable background jobs, Redis or CI pi
 Local financial assistant setup: [LOCAL_AI.md](LOCAL_AI.md). Bank badge colors can be customized in **Settings > Preferences**.
 
 In Preferences, bank renames update existing transactions. Deleting a bank with transactions requires choosing a replacement; no transactions are deleted. Removed banks stay out of the selectors until explicitly added again.
+
+Preferences also stores the workspace's region, currency and time zone in PostgreSQL. Defaults are United States, USD and Eastern Time (`America/New_York`, with EST/EDT). Region controls date and number formatting; currency changes the denomination shown throughout the app and PDF exports without converting saved amounts. The time zone controls today's date and subscription due status; existing transaction dates never shift. Budgets opens to the current month and year, with other periods and All still available. Regional preferences are included in complete backups; merging keeps any existing preferences, and older backups remain supported.
