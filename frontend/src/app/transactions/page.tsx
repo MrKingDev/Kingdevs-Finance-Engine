@@ -1,20 +1,28 @@
 "use client";
 
+import { Copy, Plus, Search } from "lucide-react";
 import { useState } from "react";
-
+import BankBadge from "@/components/banks/bankBadge";
+import BankSelect from "@/components/banks/bankSelect";
+import CategorySelect from "@/components/categories/categorySelect";
 import PageTransition from "@/components/pageTransitions";
-
+import TransactionsTable from "@/components/transactions/transactionsTable";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-
+import { DatePickerInput } from "@/components/ui/date-picker";
+import {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -23,28 +31,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import {
-  Dialog,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { DatePickerInput } from "@/components/ui/date-picker";
 import { Separator } from "@/components/ui/separator";
-
-import TransactionsTable from "@/components/transactions/transactionsTable";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
-import CategorySelect from "@/components/categories/categorySelect";
 import { useFinanceList } from "@/lib/use-finance-list";
+import type { Transaction } from "@/types/api";
+
+const emptyTransaction = () => {
+  const today = new Date();
+  return {
+    date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`,
+    merchant: "",
+    category: "",
+    bank: "",
+    type: "expense" as Transaction["type"],
+    amount: "",
+  };
+};
 
 const Transactions = () => {
   const banks = useFinanceList<string>("/transactions/banks");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [isDuplicate, setIsDuplicate] = useState(false);
   // States
   const [search, setSearch] = useState("");
   const [type, setType] = useState("all");
@@ -70,19 +80,28 @@ const Transactions = () => {
 
   const [addingTransaction, setAddingTransaction] = useState(false);
 
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split("T")[0],
-    merchant: "",
-    category: "",
-    bank: "",
-    type: "expense" as "income" | "expense",
-    amount: "",
-  });
+  const [formData, setFormData] = useState(emptyTransaction);
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingId(transaction.id);
+    setIsDuplicate(false);
+    setCreateError(null);
+    setFormData({
+      date: transaction.date,
+      merchant: transaction.merchant,
+      category: transaction.category,
+      bank: transaction.bank,
+      type: transaction.type,
+      amount: transaction.amount,
+    });
+    setIsDialogOpen(true);
+  };
 
   const handleAddTransaction = async (
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
+    if (addingTransaction) return;
 
     try {
       setAddingTransaction(true);
@@ -92,21 +111,32 @@ const Transactions = () => {
         setCreateError("Select a category. Create one in Settings if needed.");
         return;
       }
+      if (
+        !formData.date ||
+        !formData.merchant.trim() ||
+        !formData.bank.trim()
+      ) {
+        setCreateError("Enter a date, merchant, and bank.");
+        return;
+      }
 
-      const response = await fetch(`${API_URL}/transactions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${API_URL}/transactions${editingId !== null ? `/${editingId}` : ""}`,
+        {
+          method: editingId !== null ? "PATCH" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            date: formData.date,
+            merchant: formData.merchant.trim(),
+            category: formData.category,
+            bank: formData.bank.trim(),
+            type: formData.type,
+            amount: formData.amount,
+          }),
         },
-        body: JSON.stringify({
-          date: formData.date,
-          merchant: formData.merchant,
-          category: formData.category,
-          bank: formData.bank,
-          type: formData.type,
-          amount: formData.amount,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(
@@ -117,14 +147,9 @@ const Transactions = () => {
       setIsDialogOpen(false);
       notifyFinanceChanged();
 
-      setFormData({
-        date: new Date().toISOString().split("T")[0],
-        merchant: "",
-        category: "",
-        bank: "",
-        type: "expense",
-        amount: "",
-      });
+      setFormData(emptyTransaction());
+      setEditingId(null);
+      setIsDuplicate(false);
     } catch (error) {
       console.error("Add transaction error:", error);
       setCreateError(
@@ -148,22 +173,51 @@ const Transactions = () => {
             </p>
           </div>
 
-          <DialogTrigger isOpen={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <Button aria-label="Add Transaction" className="w-full sm:w-auto">
+          <DialogTrigger
+            isOpen={isDialogOpen}
+            onOpenChange={(open) => {
+              if (!addingTransaction) setIsDialogOpen(open);
+            }}
+          >
+            <Button
+              aria-label="Add Transaction"
+              className="w-full sm:w-auto"
+              onPress={() => {
+                setEditingId(null);
+                setIsDuplicate(false);
+                setCreateError(null);
+                setFormData(emptyTransaction());
+              }}
+            >
               <Plus className="size-4" />
               Add Transaction
             </Button>
 
-            <Dialog>
+            <Dialog
+              className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md"
+              isDismissable={!addingTransaction}
+              showCloseButton={!addingTransaction}
+            >
               <DialogHeader>
-                <DialogTitle>Add Transaction</DialogTitle>
+                <DialogTitle>
+                  {editingId !== null
+                    ? "Edit Transaction"
+                    : isDuplicate
+                      ? "Duplicate Transaction"
+                      : "Add Transaction"}
+                </DialogTitle>
+                {isDuplicate && (
+                  <p className="text-sm text-muted-foreground">
+                    Edit this copy, then save it as a new transaction.
+                  </p>
+                )}
               </DialogHeader>
 
               <div>
                 <form onSubmit={handleAddTransaction} className="grid gap-4">
                   {/* Date */}
                   <div className="grid gap-2">
-                    <Label htmlFor="transaction-date">Date</Label>
+                    <Label htmlFor="transaction-date-input">Date</Label>
 
                     <DatePickerInput
                       id="transaction-date"
@@ -175,6 +229,7 @@ const Transactions = () => {
                         }))
                       }
                       placeholder="Select transaction date"
+                      disabled={addingTransaction}
                     />
                   </div>
 
@@ -184,6 +239,9 @@ const Transactions = () => {
 
                     <Input
                       id="merchant"
+                      required
+                      maxLength={255}
+                      disabled={addingTransaction}
                       placeholder="Walmart"
                       value={formData.merchant}
                       onChange={(event) =>
@@ -214,51 +272,57 @@ const Transactions = () => {
                     Use the budget's category to count this expense toward its
                     monthly limit.
                   </p>
-                  {createError && (
-                    <p role="alert" className="text-sm text-destructive">
-                      {createError}
-                    </p>
-                  )}
                   {/* Bank */}
                   <div className="grid gap-2">
-                    <Label htmlFor="bank">Bank</Label>
-
-                    <Input
-                      id="bank"
-                      placeholder="Chase"
+                    <p className="text-sm font-medium">Bank</p>
+                    <BankSelect
                       value={formData.bank}
-                      onChange={(event) =>
-                        setFormData({
-                          ...formData,
-                          bank: event.target.value,
-                        })
+                      disabled={addingTransaction}
+                      onChange={(bank) =>
+                        setFormData((current) => ({ ...current, bank }))
                       }
                     />
                   </div>
 
                   {/* Type */}
                   <div className="grid gap-2">
-                    <Label>Type</Label>
-
-                    <Select
-                      className="w-full"
-                      selectedKey={formData.type}
-                      onSelectionChange={(key) =>
-                        setFormData((current) => ({
-                          ...current,
-                          type: key as "income" | "expense",
-                        }))
-                      }
+                    <p
+                      id="transaction-type-label"
+                      className="text-sm font-medium"
                     >
-                      <SelectTrigger id="transaction-type">
-                        <SelectValue />
-                      </SelectTrigger>
-
-                      <SelectContent>
-                        <SelectItem id="expense">Expense</SelectItem>
-                        <SelectItem id="income">Income</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      Type
+                    </p>
+                    <ToggleGroup
+                      aria-labelledby="transaction-type-label"
+                      className="w-full"
+                      variant="outline"
+                      spacing={0}
+                      selectionMode="single"
+                      disallowEmptySelection
+                      isDisabled={addingTransaction}
+                      selectedKeys={[formData.type]}
+                      onSelectionChange={(keys) => {
+                        const selected = Array.from(keys)[0];
+                        if (selected === "expense" || selected === "income")
+                          setFormData((current) => ({
+                            ...current,
+                            type: selected,
+                          }));
+                      }}
+                    >
+                      <ToggleGroupItem
+                        id="expense"
+                        className="flex-1 data-selected:bg-primary data-selected:text-primary-foreground"
+                      >
+                        Expense
+                      </ToggleGroupItem>
+                      <ToggleGroupItem
+                        id="income"
+                        className="flex-1 data-selected:bg-primary data-selected:text-primary-foreground"
+                      >
+                        Income
+                      </ToggleGroupItem>
+                    </ToggleGroup>
                   </div>
 
                   {/* Amount */}
@@ -270,6 +334,9 @@ const Transactions = () => {
                       type="number"
                       min="0.01"
                       step="0.01"
+                      required
+                      max="9999999999.99"
+                      disabled={addingTransaction}
                       placeholder="0.00"
                       value={formData.amount}
                       onChange={(event) =>
@@ -281,13 +348,49 @@ const Transactions = () => {
                     />
                   </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    isDisabled={addingTransaction}
-                  >
-                    {addingTransaction ? "Adding..." : "Add Transaction"}
-                  </Button>
+                  {createError && (
+                    <p role="alert" className="text-sm text-destructive">
+                      {createError}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {editingId !== null && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        isDisabled={addingTransaction}
+                        onPress={() => {
+                          setEditingId(null);
+                          setIsDuplicate(true);
+                          setCreateError(null);
+                        }}
+                      >
+                        <Copy className="size-4" />
+                        Duplicate
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      isDisabled={addingTransaction}
+                      onPress={() => setIsDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1"
+                      isDisabled={addingTransaction}
+                    >
+                      {addingTransaction
+                        ? "Saving..."
+                        : editingId !== null
+                          ? "Save Changes"
+                          : isDuplicate
+                            ? "Create Duplicate"
+                            : "Add Transaction"}
+                    </Button>
+                  </div>
                 </form>
               </div>
             </Dialog>
@@ -359,7 +462,11 @@ const Transactions = () => {
                   <SelectContent>
                     <SelectGroup>
                       <SelectItem id="all">All banks</SelectItem>
-                      {banks.data.map((name) => <SelectItem key={name} id={name}>{name}</SelectItem>)}
+                      {banks.data.map((name) => (
+                        <SelectItem key={name} id={name} textValue={name}>
+                          <BankBadge bank={name} />
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -414,6 +521,7 @@ const Transactions = () => {
                 minAmount={minAmount}
                 maxAmount={maxAmount}
                 onClearFilters={clearFilters}
+                onEdit={handleEditTransaction}
               />
             </CardContent>
           </Card>

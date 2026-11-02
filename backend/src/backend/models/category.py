@@ -8,7 +8,7 @@ from backend.category_colors import COLOR_TOKENS, DEFAULT_CATEGORY_COLOR
 class Category(Base):
     __tablename__ = "categories"
 
-    # Names are shared keys until category editing/renaming is introduced.
+    # Renames must update all references atomically through the categories route.
     name: Mapped[str] = mapped_column(String(100), primary_key=True)
     color: Mapped[str] = mapped_column(
         String(32), nullable=False, default=DEFAULT_CATEGORY_COLOR,

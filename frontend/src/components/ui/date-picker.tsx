@@ -35,15 +35,19 @@ interface DatePickerInputProps {
   onChange?: (value: string) => void;
 
   placeholder?: string;
+  disabled?: boolean;
+  monthOnly?: boolean;
+  minValue?: string;
+  maxValue?: string;
 }
 
-function formatDate(date: Date | undefined) {
+function formatDate(date: Date | undefined, monthOnly = false) {
   if (!date) {
     return "";
   }
 
   return date.toLocaleDateString("en-US", {
-    day: "2-digit",
+    ...(monthOnly ? {} : { day: "2-digit" as const }),
     month: "long",
     year: "numeric",
   });
@@ -75,6 +79,10 @@ export function DatePickerInput({
   value,
   onChange,
   placeholder = "Select date",
+  disabled = false,
+  monthOnly = false,
+  minValue,
+  maxValue,
 }: DatePickerInputProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -91,7 +99,7 @@ export function DatePickerInput({
       return "";
     }
 
-    return formatDate(initialDate.toDate(getLocalTimeZone()));
+    return formatDate(initialDate.toDate(getLocalTimeZone()), monthOnly);
   });
 
   // Keep picker synced with parent form value
@@ -103,11 +111,11 @@ export function DatePickerInput({
     if (newDate) {
       setMonth(newDate);
 
-      setInputValue(formatDate(newDate.toDate(getLocalTimeZone())));
+      setInputValue(formatDate(newDate.toDate(getLocalTimeZone()), monthOnly));
     } else {
       setInputValue("");
     }
-  }, [value]);
+  }, [value, monthOnly]);
 
   const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
@@ -116,6 +124,9 @@ export function DatePickerInput({
 
     const parsedDate = new Date(newValue);
 
+    if (!newValue.trim()) {
+      setDate(undefined); onChange?.(""); return;
+    }
     if (!isValidDate(parsedDate)) {
       return;
     }
@@ -124,6 +135,7 @@ export function DatePickerInput({
       fromDate(parsedDate, getLocalTimeZone()),
     );
 
+    if ((minValue && calendarDate.toString() < minValue) || (maxValue && calendarDate.toString() > maxValue)) return;
     setDate(calendarDate);
     setMonth(calendarDate);
 
@@ -135,11 +147,12 @@ export function DatePickerInput({
       <InputGroup>
         <InputGroupInput
           id={id ? `${id}-input` : undefined}
+          disabled={disabled}
           value={inputValue}
           placeholder={placeholder}
           onChange={handleTextChange}
           onKeyDown={(event) => {
-            if (event.key === "ArrowDown") {
+            if (!disabled && event.key === "ArrowDown") {
               event.preventDefault();
               setOpen(true);
             }
@@ -147,12 +160,13 @@ export function DatePickerInput({
         />
 
         <InputGroupAddon align="inline-end">
-          <PopoverTrigger isOpen={open} onOpenChange={setOpen}>
+          <PopoverTrigger isOpen={open} onOpenChange={(nextOpen) => { if (!disabled) setOpen(nextOpen); }}>
             <InputGroupButton
               id={id ? `${id}-date-picker` : undefined}
               variant="ghost"
               size="icon-xs"
-              aria-label="Select date"
+              isDisabled={disabled}
+              aria-label={monthOnly ? "Select financial month" : "Select date"}
             >
               <CalendarIcon />
 
@@ -166,6 +180,9 @@ export function DatePickerInput({
               offset={10}
             >
               <Calendar
+                isDisabled={disabled}
+                minValue={getCalendarDate(minValue)}
+                maxValue={getCalendarDate(maxValue)}
                 value={date}
                 focusedValue={month}
                 onFocusChange={(newMonth) => setMonth(newMonth)}
@@ -185,7 +202,7 @@ export function DatePickerInput({
                   setMonth(selectedDate);
 
                   setInputValue(
-                    formatDate(selectedDate.toDate(getLocalTimeZone())),
+                    formatDate(selectedDate.toDate(getLocalTimeZone()), monthOnly),
                   );
 
                   // Gives parent YYYY-MM-DD

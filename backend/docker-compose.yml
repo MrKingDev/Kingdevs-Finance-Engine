@@ -44,7 +44,12 @@ services:
 
   backend:
     build: .
-    environment: *database_environment
+    environment:
+      <<: *database_environment
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:4b}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8001}:8000"
     depends_on:

@@ -37,7 +37,7 @@ class ConfigurationTests(unittest.TestCase):
     def test_models_share_one_registry(self):
         self.assertIs(Base, ModelBase)
         self.assertIs(Budget.metadata, Transaction.metadata)
-        self.assertEqual(set(Base.metadata.tables), {"budgets", "categories", "transactions", "transaction_rules", "subscriptions", "subscription_payments", "goals", "goal_entries"})
+        self.assertEqual(set(Base.metadata.tables), {"budgets", "categories", "transactions", "transaction_rules", "subscriptions", "subscription_payments", "goals", "goal_entries", "bank_styles"})
 
     def test_missing_database_does_not_break_public_routes(self):
         with patch.object(database.os, "environ", {"DATABASE_URL": ""}):
@@ -441,8 +441,8 @@ class BudgetTests(unittest.TestCase):
         self.assertEqual(response.json(), {"message": "Transactions, budgets, and categories cleared successfully."})
         self.assertEqual(self.financial_snapshot(), {"/transactions": [], "/budgets": [], "/categories": []})
         with self.engine.connect() as connection:
-            self.assertEqual(set(inspect(connection).get_table_names()), {"transactions", "budgets", "categories", "transaction_rules", "subscriptions", "subscription_payments", "goals", "goal_entries", "alembic_version"})
-            self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0006")
+            self.assertEqual(set(inspect(connection).get_table_names()), {"transactions", "budgets", "categories", "transaction_rules", "subscriptions", "subscription_payments", "goals", "goal_entries", "bank_styles", "alembic_version"})
+            self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0008")
 
     def test_clear_data_requires_exact_confirmation_and_preserves_records(self):
         self.seed_clear_data_records()

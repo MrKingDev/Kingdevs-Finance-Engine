@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import {
+  DatabaseBackupIcon,
   DownloadIcon,
   FileSpreadsheetIcon,
   FileTextIcon,
   LoaderCircleIcon,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
   Select,
@@ -15,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { API_URL, apiError } from "@/lib/finance-api";
 
 const MONTHS = [
@@ -32,7 +33,7 @@ const MONTHS = [
   "November",
   "December",
 ];
-type ExportKind = "csv" | "styled" | "basic";
+type ExportKind = "csv" | "styled" | "basic" | "backup";
 
 export default function Downloadables() {
   const [period, setPeriod] = useState<{ month: number; year: number } | null>(
@@ -89,23 +90,36 @@ export default function Downloadables() {
   }, []);
 
   async function download(kind: ExportKind) {
-    if (!period || activeDownload.current) return;
+    if ((kind !== "backup" && !period) || activeDownload.current) return;
     const controller = new AbortController();
     activeDownload.current = controller;
     setDownloading(kind);
     setError(null);
     setMessage(null);
-    const suffix = `${String(period.year).padStart(4, "0")}-${String(period.month).padStart(2, "0")}`;
+    const suffix = period
+      ? `${String(period.year).padStart(4, "0")}-${String(period.month).padStart(2, "0")}`
+      : "";
     const filename =
-      kind === "csv"
-        ? `finance-transactions-${suffix}.csv`
-        : `finance-report-${suffix}-${kind}.pdf`;
-    const query = new URLSearchParams({
-      month: String(period.month),
-      year: String(period.year),
-    });
-    if (kind !== "csv") query.set("style", kind);
-    const endpoint = kind === "csv" ? "transactions.csv" : "report.pdf";
+      kind === "backup"
+        ? `finance-backup-${new Date().toISOString().slice(0, 10)}.json`
+        : kind === "csv"
+          ? `finance-transactions-${suffix}.csv`
+          : `finance-report-${suffix}-${kind}.pdf`;
+    const query = new URLSearchParams(
+      period && kind !== "backup"
+        ? {
+            month: String(period.month),
+            year: String(period.year),
+          }
+        : {},
+    );
+    if (kind === "styled" || kind === "basic") query.set("style", kind);
+    const endpoint =
+      kind === "backup"
+        ? "backup.json"
+        : kind === "csv"
+          ? "transactions.csv"
+          : "report.pdf";
     try {
       const response = await fetch(`${API_URL}/exports/${endpoint}?${query}`, {
         signal: controller.signal,
@@ -115,12 +129,33 @@ export default function Downloadables() {
         throw new Error(
           await apiError(response, "Unable to generate this download."),
         );
-      const expectedType = kind === "csv" ? "text/csv" : "application/pdf";
+      const expectedType =
+        kind === "backup"
+          ? "application/json"
+          : kind === "csv"
+            ? "text/csv"
+            : "application/pdf";
       if (!response.headers.get("Content-Type")?.includes(expectedType))
         throw new Error(
           "The backend returned an unexpected file format. Please try again.",
         );
-      const blob = await response.blob();
+      let blob: Blob;
+      if (kind === "backup") {
+        const backup = await response.json();
+        // These are the application's only persistent browser settings/data.
+        // Keep their original strings so values can be restored without loss.
+        backup.browser_data = Object.fromEntries(
+          ["what-to-buy-items", "what-to-buy-budget", "theme"].map((key) => [
+            key,
+            localStorage.getItem(key),
+          ]),
+        );
+        blob = new Blob([JSON.stringify(backup, null, 2)], {
+          type: "application/json",
+        });
+      } else {
+        blob = await response.blob();
+      }
       if (controller.signal.aborted) return;
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -248,14 +283,35 @@ export default function Downloadables() {
             : "Download Basic PDF"}
         </Button>
       </div>
+      <div className="space-y-3 border-t pt-5">
+        <h3 className="font-medium">Complete data backup</h3>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Download all transactions, budgets, categories, goals and entries,
+          subscriptions and payment history, import rules, and bank preferences
+          as JSON. Includes all months and years, plus this browser's wish list
+          and theme.
+        </p>
+        <Button
+          variant="outline"
+          isDisabled={downloading !== null}
+          onPress={() => void download("backup")}
+        >
+          {downloading === "backup" ? (
+            <LoaderCircleIcon className="animate-spin" />
+          ) : (
+            <DatabaseBackupIcon />
+          )}
+          {downloading === "backup"
+            ? "Preparing Backup..."
+            : "Download All Data"}
+        </Button>
+      </div>
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
-      <p role="status" className="text-sm text-muted-foreground">
-        {message}
-      </p>
+      <output className="block text-sm text-muted-foreground">{message}</output>
     </div>
   );
 }

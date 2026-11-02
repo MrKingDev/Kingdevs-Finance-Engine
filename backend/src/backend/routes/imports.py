@@ -11,11 +11,25 @@ from backend.schemas.import_csv import (
 )
 from backend.services.csv_import import import_csv_rows
 from backend.services.csv_stream import process_file
+from backend.services.backup_import import merge_backup, plan_merge, read_backup
 
 router = APIRouter(
     prefix="/imports",
     tags=["Imports"],
 )
+
+
+@router.post("/backup/preview", summary="Validate a complete JSON backup and preview its merge")
+def preview_backup(file: Annotated[UploadFile, File()], db: Session = Depends(get_db)):
+    backup = read_backup(file.file)
+    plan = plan_merge(db, backup)
+    return {"counts": plan.counts, "browser_data": backup.browser_data,
+            "exported_at": backup.exported_at.isoformat()}
+
+
+@router.post("/backup", summary="Merge and permanently save a complete JSON backup")
+def import_backup(file: Annotated[UploadFile, File()], db: Session = Depends(get_db)):
+    return merge_backup(db, read_backup(file.file))
 
 
 @router.post("/csv/preview", response_model=CSVPreviewResponse)

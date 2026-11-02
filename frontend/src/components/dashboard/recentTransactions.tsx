@@ -1,5 +1,7 @@
 "use client";
 
+import BankBadge from "@/components/banks/bankBadge";
+
 import { Separator } from "@/components/ui/separator";
 import { useFinanceList } from "@/lib/use-finance-list";
 import type { Transaction } from "@/types/api";
@@ -33,7 +35,7 @@ export default function RecentTransactions() {
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">{transaction.merchant}</p>
               <p className="text-muted-foreground">
-                {transaction.category} · {transaction.bank} · {transaction.date}
+                {transaction.category} · <BankBadge bank={transaction.bank} /> · {transaction.date}
               </p>
             </div>
             <p

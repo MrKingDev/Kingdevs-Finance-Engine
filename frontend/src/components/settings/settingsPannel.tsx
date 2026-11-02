@@ -11,27 +11,64 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import ClearData from "./pages/clearData";
+import BanksSettings from "./pages/banks";
 import CategoriesSettings from "./pages/categories";
-import CSVImport from "./pages/csvImport";
-import ImportRules from "./pages/rules";
+import ClearData from "./pages/clearData";
 import Downloadables from "./pages/downloadables";
+import Imports from "./pages/imports";
+import LocalAISettings from "./pages/localAI";
+import ImportRules from "./pages/rules";
 
 const tabOptions = [
   {
-    label: "Import CSV",
-    optionId: "csv",
+    label: "Preferences",
+    optionId: "preferences",
     content: (
       <Card>
         <CardHeader>
-          <CardTitle>Import Transactions</CardTitle>
+          <CardTitle>Preferences</CardTitle>
           <CardDescription>
-            Validate every row before anything reaches your ledger.
+            Manage your banks and personalize their badge colors.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BanksSettings />
+        </CardContent>
+      </Card>
+    ),
+  },
+  {
+    label: "Local AI",
+    optionId: "ai",
+    content: (
+      <Card>
+        <CardHeader>
+          <CardTitle>Local AI setup</CardTitle>
+          <CardDescription>
+            Connect Ollama and ask questions about your finances.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LocalAISettings />
+        </CardContent>
+      </Card>
+    ),
+  },
+  {
+    label: "Imports",
+    optionId: "imports",
+    content: (
+      <Card>
+        <CardHeader>
+          <CardTitle>Imports</CardTitle>
+          <CardDescription>
+            Import CSV transactions or restore a JSON backup. Imported records
+            stay saved after you close the app.
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          <CSVImport />
+          <Imports />
         </CardContent>
       </Card>
     ),
@@ -99,8 +136,8 @@ const tabOptions = [
           <CardTitle>CLEAR DATA</CardTitle>
           <CardDescription>
             This permanently deletes saved transactions, budgets, and
-            categories. Goals, their entries and browser-only tools are unaffected. Restarting
-            the backend does not restore deleted data.
+            categories. Goals, their entries and browser-only tools are
+            unaffected. Restarting the backend does not restore deleted data.
           </CardDescription>
         </CardHeader>
 
@@ -113,10 +150,12 @@ const tabOptions = [
 ];
 
 export default function SettingsPanel() {
-  const [selectedTab, setSelectedTab] = useState("csv");
+  const [selectedTab, setSelectedTab] = useState("imports");
   useEffect(() => {
     const selectHashTab = () => {
-      const key = window.location.hash.slice(1);
+      const hash = window.location.hash.slice(1);
+      const key =
+        hash === "banks" ? "preferences" : hash === "csv" ? "imports" : hash;
       if (tabOptions.some((tab) => tab.optionId === key)) setSelectedTab(key);
     };
     selectHashTab();

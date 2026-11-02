@@ -1,5 +1,7 @@
 "use client";
 
+import BankSelect from "@/components/banks/bankSelect";
+
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -333,19 +335,8 @@ export default function CSVImport() {
       >
         <div className="grid gap-4 md:grid-cols-2">
           <Field>
-            <FieldLabel htmlFor="csv-bank">Bank name</FieldLabel>
-            <Input
-              id="csv-bank"
-              value={bank}
-              required
-              maxLength={100}
-              disabled={!!busy}
-              placeholder="e.g. Bank of America"
-              onChange={(event) => {
-                setBank(event.target.value);
-                invalidatePreview();
-              }}
-            />
+            <p className="text-sm font-medium">Bank name</p>
+            <BankSelect value={bank} disabled={!!busy} onChange={(value) => { setBank(value); invalidatePreview(); }} />
           </Field>
           <Field>
             <FieldLabel htmlFor="csv-file">CSV file</FieldLabel>

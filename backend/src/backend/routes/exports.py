@@ -1,5 +1,6 @@
-"""Monthly download endpoints. No export writes to the database or filesystem."""
+"""Monthly reports and complete data backups. Exports never write saved data."""
 
+from datetime import datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Response
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.services.exports import export_years, monthly_report, transaction_csv
 from backend.services.report_pdf import pdf_report
+from backend.services.backup import full_backup
 
 router = APIRouter(prefix="/exports", tags=["Exports"])
 Month = Annotated[int, Query(ge=1, le=12)]
@@ -30,6 +32,13 @@ def download(contents: bytes, media_type: str, filename: str) -> Response:
 def periods(response: Response, db: Session = Depends(get_db)):
     response.headers["Cache-Control"] = "no-store"
     return ExportPeriods(years=export_years(db))
+
+
+@router.get("/backup.json", response_class=Response, summary="Download all saved application data")
+def backup_download(db: Session = Depends(get_db)):
+    """All dates and records, including IDs and histories. Money is serialized as decimal strings."""
+    filename = f"finance-backup-{datetime.now(timezone.utc):%Y-%m-%d}.json"
+    return download(full_backup(db), "application/json", filename)
 
 
 @router.get("/transactions.csv", response_class=Response, summary="Download monthly transactions as CSV",

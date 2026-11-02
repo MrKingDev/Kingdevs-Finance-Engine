@@ -1,18 +1,9 @@
 "use client";
 
+import { Pencil, Trash2 } from "lucide-react";
+
 import { useEffect, useState } from "react";
-import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
-import type { Transaction } from "@/types/api";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
+import BankBadge from "@/components/banks/bankBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,11 +14,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-
-import { Trash2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
+import type { Transaction } from "@/types/api";
 
 // Types
 
@@ -41,6 +38,7 @@ interface TransactionsTableProps {
   minAmount: string;
   maxAmount: string;
   onClearFilters: () => void;
+  onEdit: (transaction: Transaction) => void;
 }
 
 // Format YYYY-MM-DD -> MM/DD/YYYY
@@ -63,6 +61,7 @@ const TransactionsTable = ({
   minAmount,
   maxAmount,
   onClearFilters,
+  onEdit,
 }: TransactionsTableProps) => {
   // State
 
@@ -79,7 +78,11 @@ const TransactionsTable = ({
   const [position, setPosition] = useState({ filterKey: "", page: 1 });
   const page = position.filterKey === filterKey ? position.page : 1;
   const [result, setResult] = useState<{
-    items: Transaction[]; total: number; overall_total: number; page: number; pages: number;
+    items: Transaction[];
+    total: number;
+    overall_total: number;
+    page: number;
+    pages: number;
   }>({ items: [], total: 0, overall_total: 0, page: 1, pages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,21 +96,33 @@ const TransactionsTable = ({
       window.removeEventListener("focus", refresh);
     };
   }, []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: revision refreshes rows after saves, deletes, or window focus.
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
     async function load() {
       try {
-        const response = await fetch(`${API_URL}/transactions/page?page=${page}&${filterKey}`, {
-          signal: controller.signal, cache: "no-store",
-        });
-        if (!response.ok) throw new Error(await apiError(response, "Unable to load transactions."));
+        const response = await fetch(
+          `${API_URL}/transactions/page?page=${page}&${filterKey}`,
+          {
+            signal: controller.signal,
+            cache: "no-store",
+          },
+        );
+        if (!response.ok)
+          throw new Error(
+            await apiError(response, "Unable to load transactions."),
+          );
         const data = await response.json();
         if (!controller.signal.aborted) setResult(data);
       } catch (failure) {
         if (!controller.signal.aborted)
-          setError(failure instanceof Error ? failure.message : "Unable to load transactions.");
+          setError(
+            failure instanceof Error
+              ? failure.message
+              : "Unable to load transactions.",
+          );
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -195,9 +210,11 @@ const TransactionsTable = ({
 
       <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {result.total ? (result.page - 1) * 50 + 1 : 0}–{Math.min(result.page * 50, result.total)} of{" "}
+          Showing {result.total ? (result.page - 1) * 50 + 1 : 0}–
+          {Math.min(result.page * 50, result.total)} of{" "}
           {result.total.toLocaleString()} matching transactions
-          {result.total !== result.overall_total && ` (${result.overall_total.toLocaleString()} total)`}
+          {result.total !== result.overall_total &&
+            ` (${result.overall_total.toLocaleString()} total)`}
         </p>
 
         <Button
@@ -241,7 +258,7 @@ const TransactionsTable = ({
               Amount
             </TableHead>
 
-            <TableHead id="actions" className="w-14">
+            <TableHead id="actions" className="w-28">
               <span className="sr-only">Actions</span>
             </TableHead>
           </TableHeader>
@@ -270,7 +287,7 @@ const TransactionsTable = ({
                 {/* Bank */}
 
                 <TableCell className="hidden lg:table-cell">
-                  <Badge variant="secondary">{transaction.bank}</Badge>
+                  <BankBadge bank={transaction.bank} />
                 </TableCell>
 
                 {/* Type */}
@@ -295,8 +312,17 @@ const TransactionsTable = ({
 
                 {/* Actions */}
 
-                <TableCell className="w-14">
-                  <div className="flex justify-end">
+                <TableCell className="w-28">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      aria-label={`Edit ${transaction.merchant} transaction`}
+                      onPress={() => onEdit(transaction)}
+                    >
+                      <Pencil className="size-4" />
+                      Edit
+                    </Button>
                     <AlertDialogTrigger>
                       <Button
                         variant="destructive"
@@ -336,15 +362,29 @@ const TransactionsTable = ({
           </TableBody>
         </Table>
       </div>
-      <nav aria-label="Transaction pages" className="flex flex-wrap items-center justify-between gap-3 py-4">
-        <p role="status" className="text-sm text-muted-foreground">
-          Page {result.page.toLocaleString()} of {result.pages.toLocaleString()} · 50 per page
-        </p>
+      <nav
+        aria-label="Transaction pages"
+        className="flex flex-wrap items-center justify-between gap-3 py-4"
+      >
+        <output className="text-sm text-muted-foreground">
+          Page {result.page.toLocaleString()} of {result.pages.toLocaleString()}{" "}
+          · 50 per page
+        </output>
         <div className="flex gap-2">
-          <Button variant="outline" isDisabled={result.page <= 1 || loading}
-            onPress={() => setPosition({ filterKey, page: result.page - 1 })}>Previous</Button>
-          <Button variant="outline" isDisabled={result.page >= result.pages || loading}
-            onPress={() => setPosition({ filterKey, page: result.page + 1 })}>Next</Button>
+          <Button
+            variant="outline"
+            isDisabled={result.page <= 1 || loading}
+            onPress={() => setPosition({ filterKey, page: result.page - 1 })}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            isDisabled={result.page >= result.pages || loading}
+            onPress={() => setPosition({ filterKey, page: result.page + 1 })}
+          >
+            Next
+          </Button>
         </div>
       </nav>
     </div>

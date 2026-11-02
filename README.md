@@ -73,9 +73,9 @@ Create categories in Settings and select a chart color. Transactions, budgets, s
 
 An October Housing budget counts October expense transactions assigned to Housing. An All categories budget counts every expense in its month. Income does not count as spending. Wish List and Paycheck Splitter keep their separate planning categories.
 
-### Import CSV
+### Imports
 
-1. Open **Settings > Import CSV**, enter the bank name and select a UTF-8 CSV.
+1. Open **Settings > Imports > CSV transactions**, enter the bank name and select a UTF-8 CSV.
 2. Preview the file. Explicit bank type/debit/credit data takes precedence; saved description rules can classify rent, salary and other descriptions.
 3. Resolve ambiguous signs and missing categories, then import.
 
@@ -90,6 +90,10 @@ Use YYYY-MM-DD dates, positive amounts and explicit `income` or `expense`. Prese
 Up to 1,000 rows can be selected and edited individually. Larger files are fully scanned but only the first 1,000 rows are displayed. They import the entire file using columns, saved rules and an optional fallback category. Every nonduplicate row must be valid and classified.
 
 Limits are inclusive: **500,000 nonempty data records**, excluding the header, and **50,000,000 bytes**. The backend processes 1,000-row batches, uses a temporary disk duplicate index, and commits once. Any invalid row or failed batch rolls back the whole file. Large requests may take minutes; keep the tab open. Re-preview before retrying an interrupted request.
+
+To restore a complete backup, open **Settings > Imports > JSON backup**, select the `.json` file from **Download All Data**, preview it, then choose **Import & Save Backup**. Backups up to 50 MB are validated in full and merged in one database transaction. Existing records are kept; matching transactions and history entries are skipped, while legitimate repeated entries in a backup retain their counts. Matching categories, bank preferences, monthly budgets, import rules, goals (name/type), and subscriptions (name/cycle/billing anchor/payment method) keep their current values. Related IDs are remapped automatically. Browser wish list items merge by ID; existing theme and wish list budget preferences are kept.
+
+Imported records are committed to PostgreSQL and survive closing the browser, restarting the app, and restarting its containers. The database uses the existing named Docker volume. Imports never clear existing data or run automatically on startup.
 
 ### Downloads
 
@@ -184,3 +188,7 @@ Backend tests use Python's `unittest` and disposable SQLite databases. PostgreSQ
 | [Agent instructions](AGENTS.md) | Repository rules for coding agents. |
 
 No users/accounts, JWT/OAuth, bank sync, durable background jobs, Redis or CI pipeline are implemented yet. Most analytics still load the full transaction list; very large ledgers would benefit from backend aggregates beyond the paginated transaction screen. Monthly export limits are independent of import limits.
+
+Local financial assistant setup: [LOCAL_AI.md](LOCAL_AI.md). Bank badge colors can be customized in **Settings > Preferences**.
+
+In Preferences, bank renames update existing transactions. Deleting a bank with transactions requires choosing a replacement; no transactions are deleted. Removed banks stay out of the selectors until explicitly added again.

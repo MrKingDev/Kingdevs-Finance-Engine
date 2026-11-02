@@ -1,20 +1,18 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import * as React from "react";
-
+import BudgetCard from "@/components/budgets/budgetCard";
+import CategorySelect from "@/components/categories/categorySelect";
 import PageTransition from "@/components/pageTransitions";
-
 import { Button } from "@/components/ui/button";
-
 import {
   Dialog,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 import { Input } from "@/components/ui/input";
-
 import {
   Select,
   SelectContent,
@@ -22,14 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { Plus } from "lucide-react";
-
-import BudgetCard from "@/components/budgets/budgetCard";
-import type { Budget } from "@/types/api";
-import CategorySelect from "@/components/categories/categorySelect";
 import { API_URL, apiError, notifyFinanceChanged } from "@/lib/finance-api";
 import { useFinanceList } from "@/lib/use-finance-list";
+import type { Budget } from "@/types/api";
 
 const monthOptions = [
   {
@@ -88,6 +81,19 @@ const Budgets = () => {
     loading: isLoading,
     error,
   } = useFinanceList<Budget>("/budgets");
+  const [filterMonth, setFilterMonth] = React.useState("all");
+  const [filterYear, setFilterYear] = React.useState("all");
+  const budgetYears = [
+    ...new Set([
+      ...budgets.map((budget) => budget.year),
+      ...(filterYear === "all" ? [] : [Number(filterYear)]),
+    ]),
+  ].sort((a, b) => b - a);
+  const filteredBudgets = budgets.filter(
+    (budget) =>
+      (filterMonth === "all" || budget.month === Number(filterMonth)) &&
+      (filterYear === "all" || budget.year === Number(filterYear)),
+  );
   const [category, setCategory] = React.useState("");
   const [scope, setScope] = React.useState("category");
 
@@ -353,6 +359,69 @@ const Budgets = () => {
           </div>
         </header>
 
+        <div className="mt-6 flex flex-wrap items-end gap-3">
+          <div className="w-full space-y-2 sm:w-48">
+            <p id="budget-filter-month-label" className="text-sm font-medium">
+              Month
+            </p>
+            <Select
+              aria-labelledby="budget-filter-month-label"
+              className="w-full"
+              selectedKey={filterMonth}
+              onSelectionChange={(key) =>
+                key !== null && setFilterMonth(String(key))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="all">All months</SelectItem>
+                {monthOptions.map((option) => (
+                  <SelectItem key={option.value} id={String(option.value)}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full space-y-2 sm:w-36">
+            <p id="budget-filter-year-label" className="text-sm font-medium">
+              Year
+            </p>
+            <Select
+              aria-labelledby="budget-filter-year-label"
+              className="w-full"
+              selectedKey={filterYear}
+              onSelectionChange={(key) =>
+                key !== null && setFilterYear(String(key))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="all">All years</SelectItem>
+                {budgetYears.map((value) => (
+                  <SelectItem key={value} id={String(value)}>
+                    {value}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            variant="outline"
+            isDisabled={filterMonth === "all" && filterYear === "all"}
+            onPress={() => {
+              setFilterMonth("all");
+              setFilterYear("all");
+            }}
+          >
+            Clear Filters
+          </Button>
+        </div>
+
         {isLoading && (
           <div className="mt-6">
             <p className="text-sm text-muted-foreground">Loading budgets...</p>
@@ -378,9 +447,18 @@ const Budgets = () => {
           </div>
         )}
 
-        {!isLoading && !error && budgets.length > 0 && (
+        {!isLoading &&
+          !error &&
+          budgets.length > 0 &&
+          filteredBudgets.length === 0 && (
+            <output className="mt-6 block text-sm text-muted-foreground">
+              No budgets match the selected month and year.
+            </output>
+          )}
+
+        {!isLoading && !error && filteredBudgets.length > 0 && (
           <section className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {budgets.map((budget) => (
+            {filteredBudgets.map((budget) => (
               <BudgetCard
                 key={budget.id}
                 budget={budget}

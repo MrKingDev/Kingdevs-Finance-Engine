@@ -82,11 +82,14 @@ Paths are relative to the API root; Docker browsers prepend `/api`. There is cur
 | POST | `/imports/csv/preview` | Validate every row; return at most 1,000 preview rows. |
 | POST | `/imports/csv/commit` | Commit up to 1,000 selected/edited JSON rows. |
 | POST | `/imports/csv/file` | Revalidate and atomically import a whole CSV. |
+| POST | `/imports/backup/preview` | Validate a complete version 1 JSON backup (up to 50 MB) and preview new/existing record counts. |
+| POST | `/imports/backup` | Revalidate, merge, and commit a complete backup atomically; retain existing records and remap related IDs. |
 | GET, POST | `/subscriptions` | List/create subscriptions. |
 | GET | `/subscriptions/overview`, `/subscriptions/summary` | Due status and estimates. |
 | GET, PATCH, DELETE | `/subscriptions/{id}` | Read/edit/delete where history permits. |
 | GET, POST | `/subscriptions/{id}/payments` | History / record a payment. |
 | GET | `/exports/periods` | Available report years. |
+| GET | `/exports/backup.json` | Complete versioned JSON backup of every saved application table, across all dates, with exact decimal amounts and IDs. |
 | GET | `/exports/transactions.csv?month=10&year=2026` | Monthly spreadsheet report. |
 | GET | `/exports/report.pdf?month=10&year=2026&style=styled` | Styled PDF; use `style=basic` for plain. |
 | GET, POST | `/goals` | List/create savings or debt payoff goals with aggregated progress. |

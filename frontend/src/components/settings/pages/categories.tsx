@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { type FormEvent, useState } from "react";
+import { AlertDialog, AlertDialogTrigger, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,6 +18,10 @@ import type { Category, CategoryColorOption } from "@/types/api";
 export default function CategoriesSettings() {
   const categories = useFinanceList<Category>("/categories");
   const palette = useFinanceList<CategoryColorOption>("/categories/colors");
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editColor, setEditColor] = useState("chart-blue-2");
+  const [editName, setEditName] = useState("");
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [color, setColor] = useState("chart-blue-2");
   const [saving, setSaving] = useState(false);
@@ -58,8 +63,7 @@ export default function CategoriesSettings() {
     }
   }
 
-  async function changeColor(category: Category, nextColor: string) {
-    if (nextColor === category.color) return;
+  async function mutateCategory(category: Category, remove = false) {
     setUpdating(category.name);
     setError(null);
     setMessage(null);
@@ -67,20 +71,26 @@ export default function CategoriesSettings() {
       const response = await fetch(
         `${API_URL}/categories/${encodeURIComponent(category.name)}`,
         {
-          method: "PATCH",
+          method: remove ? "DELETE" : "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ color: nextColor }),
+          ...(remove
+            ? {}
+            : { body: JSON.stringify({ name: editName.trim(), color: editColor }) }),
         },
       );
       if (!response.ok)
-        throw new Error(await apiError(response, "Unable to update color."));
+        throw new Error(await apiError(response, "Unable to save category."));
+      setEditing(null);
+      setDeleting(null);
       setMessage(
-        `${category.name} color updated, including existing transactions.`,
+        remove
+          ? `${category.name} deleted.`
+          : "Category updated across all linked records.",
       );
       notifyFinanceChanged();
     } catch (failure) {
       setError(
-        failure instanceof Error ? failure.message : "Unable to update color.",
+        failure instanceof Error ? failure.message : "Unable to save category.",
       );
     } finally {
       setUpdating(null);
@@ -178,7 +188,8 @@ export default function CategoriesSettings() {
         <h3 className="font-semibold">Saved categories</h3>
         <p className="text-sm text-muted-foreground">
           Choose these in transactions and budgets. Changing a color also
-          recolors existing expenses in your charts.
+          recolors existing expenses in your charts. Renaming updates all linked
+          records. Only unused categories can be deleted.
         </p>
         {categories.loading && (
           <p className="text-sm text-muted-foreground">Loading categories...</p>
@@ -203,27 +214,44 @@ export default function CategoriesSettings() {
               />
               <span className="break-all">{category.name}</span>
             </span>
-            <Select
-              aria-label={`Color for ${category.name}`}
-              selectedKey={category.color}
-              isDisabled={
-                updating !== null || palette.loading || !!palette.error
-              }
-              onSelectionChange={(key) => {
-                if (key !== null) void changeColor(category, String(key));
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {palette.data.map((option) => (
-                  <SelectItem key={option.value} id={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <AlertDialogTrigger isOpen={editing === category.name} onOpenChange={(open) => {
+              if (updating !== null) return;
+              setEditing(open ? category.name : null);
+              setEditName(category.name); setEditColor(category.color); setError(null);
+            }}>
+              <Button variant="outline" isDisabled={updating !== null}>Edit category</Button>
+              <AlertDialog isKeyboardDismissDisabled={updating !== null}>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Edit {category.name}</AlertDialogTitle>
+                  <AlertDialogDescription>Update the name and color across all linked records.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <label htmlFor="edit-category-name" className="text-sm font-medium">Category name</label>
+                <Input id="edit-category-name" value={editName} onChange={(event) => setEditName(event.target.value)} maxLength={100} disabled={updating !== null} />
+                <Select aria-label="Category color" selectedKey={editColor} isDisabled={updating !== null || palette.loading || !!palette.error} onSelectionChange={(key) => { if (key !== null) setEditColor(String(key)); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{palette.data.map((option) => <SelectItem key={option.value} id={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                </Select>
+                {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+                <AlertDialogFooter>
+                  <AlertDialogCancel isDisabled={updating !== null}>Cancel</AlertDialogCancel>
+                  <Button isDisabled={updating !== null || !editName.trim() || palette.loading || !!palette.error} onPress={() => void mutateCategory(category)}>{updating ? "Saving..." : "Save changes"}</Button>
+                </AlertDialogFooter>
+              </AlertDialog>
+            </AlertDialogTrigger>
+            <AlertDialogTrigger isOpen={deleting === category.name} onOpenChange={(open) => { if (updating === null) { setDeleting(open ? category.name : null); setError(null); } }}>
+              <Button variant="outline" isDisabled={updating !== null}>Delete</Button>
+              <AlertDialog isKeyboardDismissDisabled={updating !== null}>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete {category.name}?</AlertDialogTitle>
+                  <AlertDialogDescription>Only unused categories can be deleted. Reassign linked transactions, budgets, rules and subscriptions first.</AlertDialogDescription>
+                </AlertDialogHeader>
+                {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+                <AlertDialogFooter>
+                  <AlertDialogCancel isDisabled={updating !== null}>Cancel</AlertDialogCancel>
+                  <Button variant="destructive" isDisabled={updating !== null} onPress={() => void mutateCategory(category, true)}>{updating ? "Deleting..." : "Delete category"}</Button>
+                </AlertDialogFooter>
+              </AlertDialog>
+            </AlertDialogTrigger>
           </div>
         ))}
       </div>

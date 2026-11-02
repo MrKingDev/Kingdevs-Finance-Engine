@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator
 
 from backend.category_colors import CategoryColor
 
@@ -15,6 +15,18 @@ class CategoryCreate(BaseModel):
 
 class CategoryColorUpdate(BaseModel):
     color: CategoryColor
+
+
+class CategoryUpdate(BaseModel):
+    name: CategoryName | None = None
+    color: CategoryColor | None = None
+
+    @field_validator("name", "color")
+    @classmethod
+    def reject_null(cls, value):
+        if value is None:
+            raise ValueError("Must not be null")
+        return value
 
 
 class CategoryResponse(BaseModel):

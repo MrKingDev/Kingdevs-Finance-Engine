@@ -1,0 +1,14 @@
+# Use with: docker compose -f backend/docker-compose.yml -f compose.ai.yaml ...
+services:
+  backend:
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+  ollama:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_NO_CLOUD: "1"
+    volumes:
+      - finance_engine_ollama:/root/.ollama
+    restart: unless-stopped
+volumes:
+  finance_engine_ollama:

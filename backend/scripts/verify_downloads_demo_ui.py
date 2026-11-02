@@ -97,7 +97,7 @@ try:
             ("Download Basic PDF", f"finance-report-{year}-{month:02}-basic.pdf"),
         ]:
             click(label)
-            until("document.querySelector('[role=status]')?.textContent.includes(" + json.dumps(filename) + ")")
+            until("document.querySelector('output,[role=status]')?.textContent.includes(" + json.dumps(filename) + ")")
             for _ in range(100):
                 if (output / filename).exists():
                     break
@@ -119,7 +119,7 @@ try:
         until("!!document.querySelector('[role=alert]')")
         call("Network.setBlockedURLs", {"urls": []})
         click("Download PDF")
-        until("!document.querySelector('[role=alert]') && !!document.querySelector('[role=status]')?.textContent")
+        until("!document.querySelector('[role=alert]') && !!document.querySelector('output,[role=status]')?.textContent")
         call("Emulation.setDeviceMetricsOverride", {"width": 390, "height": 844, "deviceScaleFactor": 1, "mobile": True})
         screenshot("settings-mobile.png")
         assert evaluate("document.documentElement.scrollWidth <= innerWidth"), "Horizontal page overflow"
